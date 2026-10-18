@@ -885,14 +885,14 @@ export default function BlenderCarViewportPage({
                           ? 'جاري تركيب البروب الحقيقي...'
                           : customLightbarName
                             ? `مركّب الحقيقي: ${customLightbarName}`
-                            : 'ارفع ملف LCPDFR الحقيقي هنا (.ZIP / .OBJ / .YFT)'}
+                            : 'ارفع ملف LCPDFR الحقيقي هنا (.ZIP / .RAR / .Z3D / .OBJ / .YFT)'}
                       </span>
                       <span className="text-[9px] text-neutral-400 font-normal">
-                        هذا اللي يخلي القطعة نفس الموقع — مو المعاينة
+                        يدعم حزم Whelen ZModeler: ZIP و RAR و Z3D — مو بس المعاينة
                       </span>
                       <input
                         type="file"
-                        accept=".zip,.obj,.yft"
+                        accept=".zip,.rar,.z3d,.obj,.yft"
                         className="hidden"
                         disabled={isLoadingLightbar}
                         onChange={(e) => {
@@ -911,7 +911,7 @@ export default function BlenderCarViewportPage({
 
                     <p className="text-[9px] text-neutral-400 leading-relaxed bg-[#141414] border border-[#333] rounded-lg px-2 py-1.5">
                       أزرار الكتالوج = <span className="text-amber-300">معاينة داخل الاستوديو</span> (مش ملف LCPDFR الأصلي).
-                      عشان القطعة تكون نفس الموقع: افتح الرابط → حمّل ZIP → ارفعه تحت. لو الاتجاه غلط اضغط قلب Y.
+                      عشان القطعة تكون نفس الموقع: افتح الرابط → حمّل ZIP/RAR/Z3D → ارفعه تحت. لو الاتجاه غلط اضغط قلب Y.
                     </p>
 
                     <div className="grid grid-cols-3 gap-1">
@@ -946,7 +946,7 @@ export default function BlenderCarViewportPage({
                         { id: 'viper_s2', label: '🚨 فلاشر طبلون Viper S2', badge: 'طبلون' },
                         { id: 'roof_single_beacon', label: '🚨 منارة سقف L31', badge: 'VIP' },
                         { id: 'beacon_classic', label: '🚔 كشافات كلاسيك', badge: 'كلاسيك' },
-                        { id: 'custom_obj', label: '📦 بروب من ملفك ZIP/OBJ/YFT', badge: 'مخصص' },
+                        { id: 'custom_obj', label: '📦 بروب من ملفك ZIP/RAR/Z3D', badge: 'مخصص' },
                         { id: 'none', label: '❌ بدون ونان (مدنية)', badge: 'مدنية' }
                       ].map((sOpt) => (
                         <button

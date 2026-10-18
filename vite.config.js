@@ -80,8 +80,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5175
   },
+  optimizeDeps: {
+    exclude: ['node-unrar-js']
+  },
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    target: 'esnext'
   }
 });

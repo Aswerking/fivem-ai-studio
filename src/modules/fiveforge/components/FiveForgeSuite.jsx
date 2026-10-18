@@ -2053,7 +2053,7 @@ export default function FiveForgeSuite({ className = "" }) {
                                   { id: 'valor_vshape', label: '⚡ ونان سقف V إيروديناميك', desc: 'Federal Signal Valor زوايا مثلثة حديثة' },
                                   { id: 'roof_single_beacon', label: '🚨 ونان مغناطيسي فردي', desc: 'Whelen L31 LED بقاعدة مغناطيسية للمواكب' },
                                   { id: 'beacon_classic', label: '🚔 ونان كلاسيك قبتين دوارة', desc: 'Federal Signal Aerodynic مع سماعة وسطية' },
-                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/OBJ/YFT)', desc: 'ارفع ملف LCPDFR من صفحة الـ Blender Viewport' }
+                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/RAR/Z3D/OBJ/YFT)', desc: 'ارفع ملف LCPDFR أو ZModeler من صفحة الـ Blender Viewport' }
                                 ].map((sItem) => (
                                   <button
                                     key={sItem.id}

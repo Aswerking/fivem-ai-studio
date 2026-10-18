@@ -391,7 +391,7 @@ export function RealGta5ModsImporter({
         </span>
         <input
           type="file"
-          accept=".zip,.yft,.ytd,.glb,.gltf,.obj,.rar,.7z,.rpf,.oiv"
+          accept=".zip,.rar,.z3d,.yft,.ytd,.glb,.gltf,.obj,.7z,.rpf,.oiv"
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />

@@ -2,6 +2,8 @@ import JSZip from 'jszip';
 import * as pako from 'pako';
 import { parseYTD } from '../../../utils/fivemFormatParser.js';
 import { parseRpf7Archive, parseYtdTextureDictionary } from '../../../utils/yftVehicleLoader.js';
+import { extractRarEntries } from './archiveExtractor.js';
+import { parseZ3dToThreeScene } from './z3dLoader.js';
 
 // تحديد نوع ملف الميتا من محتواه (أدق من الاسم)
 const META_TYPES = [
@@ -135,8 +137,24 @@ export async function analyzeCarArchive(file) {
     return report;
   }
 
-  if (lower.endsWith('.rar') || lower.endsWith('.7z')) {
-    report.errors.push('صيغة RAR/7z غير مدعومة بالرفع اليدوي للمتصفح — استخدم استيراد الرابط المباشر من gta5-mods أو ارفع ملف ZIP / RPF / YFT.');
+  if (lower.endsWith('.7z')) {
+    report.errors.push('صيغة 7Z غير مدعومة — فكها وارفع ZIP أو RAR أو YFT / Z3D.');
+    return report;
+  }
+
+  if (lower.endsWith('.z3d')) {
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
+      parseZ3dToThreeScene(data); // validate readable mesh
+      const blobUrl = URL.createObjectURL(new Blob([data]));
+      const spawn = file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'z3dprop';
+      report.meshes3d.push({ name: file.name, size: data.length, ext: 'z3d', blobUrl });
+      report.spawnCodes.push(spawn);
+      report.vehicleNames[spawn] = spawn.toUpperCase();
+      report.warnings.push('تم استيراد ZModeler (.z3d) كمعاينة استوديو — للتصدير النهائي لفايف إم يُفضّل YFT/OBJ.');
+    } catch (err) {
+      report.errors.push(err.message || 'تعذر قراءة ملف Z3D');
+    }
     return report;
   }
 
@@ -173,11 +191,11 @@ export async function analyzeCarArchive(file) {
           }
         } catch {}
       }
-    } else if (name.endsWith('.glb') || name.endsWith('.gltf') || name.endsWith('.obj')) {
+    } else if (name.endsWith('.glb') || name.endsWith('.gltf') || name.endsWith('.obj') || name.endsWith('.z3d')) {
       const ext = name.split('.').pop();
       const blob = new Blob([data]);
       const blobUrl = URL.createObjectURL(blob);
-      report.meshes3d.push({ name: item.name, size: item.size, ext, blobUrl });
+      report.meshes3d.push({ name: item.name, size: item.size, ext, blobUrl, data: name.endsWith('.z3d') ? data : undefined });
     } else if (name.endsWith('.meta') || name.endsWith('.xml')) {
       const text = new TextDecoder().decode(data);
       const mt = META_TYPES.find((m) => text.includes('<' + m.root));
@@ -196,12 +214,29 @@ export async function analyzeCarArchive(file) {
   if (lower.endsWith('.rpf')) {
     const rpfData = new Uint8Array(await file.arrayBuffer());
     await processEntryItem({ path: file.name, name: file.name, size: rpfData.length, data: rpfData });
+  } else if (lower.endsWith('.rar')) {
+    try {
+      const ab = await file.arrayBuffer();
+      const entries = await extractRarEntries(ab);
+      for (const entry of entries) {
+        const item = {
+          path: entry.name,
+          name: base(entry.name),
+          size: entry.data.length,
+          data: entry.data
+        };
+        await processEntryItem(item);
+      }
+    } catch (e) {
+      report.errors.push(e.message || 'تعذر فك ملف الـ RAR');
+      return report;
+    }
   } else {
     let zip;
     try {
       zip = await JSZip.loadAsync(file);
     } catch (e) {
-      report.errors.push('تعذر فك الملف — تأكد أنه ملف ZIP أو RPF أو YFT سليم.');
+      report.errors.push('تعذر فك الملف — تأكد أنه ملف ZIP أو RAR أو RPF أو YFT سليم.');
       return report;
     }
 
