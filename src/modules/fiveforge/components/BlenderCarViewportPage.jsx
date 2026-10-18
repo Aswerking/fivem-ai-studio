@@ -240,7 +240,10 @@ export default function BlenderCarViewportPage({
       setSirenType(pack.sirenType);
       setGizmoTarget('siren');
     }
-    setLcpdfrStatus(`✅ تم تطبيق بروبة LCPDFR: ${pack.titleAr}`);
+    // Honest UX: catalog = studio preview style, NOT the gated LCPDFR mesh download
+    setLcpdfrStatus(
+      `معاينة استوديو لـ «${pack.titleAr}» — مو ملف الموقع. حمّل الـ ZIP من LCPDFR وارفعه تحت عشان يصير نفس القطعة بالضبط.`
+    );
   };
 
   const handleImportLcpdfrUrl = () => {
@@ -871,18 +874,21 @@ export default function BlenderCarViewportPage({
                     </div>
 
                     {/* LCPDFR Lightbar Dev Resources Quick Drop/Upload */}
-                    <label className={`p-2 border border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition text-[10px] ${
+                    <label className={`p-3 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition text-[10px] ${
                       isLoadingLightbar
                         ? 'border-amber-400 bg-amber-500/10 text-amber-200'
-                        : 'border-[#555] hover:border-amber-400 bg-[#141414] hover:bg-[#1f1f1f] text-neutral-300'
+                        : 'border-amber-500/70 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 text-amber-100'
                     }`}>
-                      <span>📦</span>
-                      <span className="font-bold">
+                      <span className="text-base">📦</span>
+                      <span className="font-black text-[11px]">
                         {isLoadingLightbar
-                          ? 'جاري تركيب البروب...'
+                          ? 'جاري تركيب البروب الحقيقي...'
                           : customLightbarName
-                            ? `مركّب: ${customLightbarName}`
-                            : 'رفع ونان مخصص من LCPDFR (.ZIP / .OBJ / .YFT)'}
+                            ? `مركّب الحقيقي: ${customLightbarName}`
+                            : 'ارفع ملف LCPDFR الحقيقي هنا (.ZIP / .OBJ / .YFT)'}
+                      </span>
+                      <span className="text-[9px] text-neutral-400 font-normal">
+                        هذا اللي يخلي القطعة نفس الموقع — مو المعاينة
                       </span>
                       <input
                         type="file"
@@ -904,7 +910,8 @@ export default function BlenderCarViewportPage({
                     )}
 
                     <p className="text-[9px] text-neutral-400 leading-relaxed bg-[#141414] border border-[#333] rounded-lg px-2 py-1.5">
-                      اختر نوع الونان → يتركب على مكانه تلقائي. لو الاتجاه غلط اضغط <span className="text-amber-300">قلب Y</span>. حرّك بالماوس والجيزمو يحفظ المكان.
+                      أزرار الكتالوج = <span className="text-amber-300">معاينة داخل الاستوديو</span> (مش ملف LCPDFR الأصلي).
+                      عشان القطعة تكون نفس الموقع: افتح الرابط → حمّل ZIP → ارفعه تحت. لو الاتجاه غلط اضغط قلب Y.
                     </p>
 
                     <div className="grid grid-cols-3 gap-1">
