@@ -73,9 +73,15 @@ function gta5ModsApiPlugin() {
 }
 
 export default defineConfig({
+  // Relative base works for GitHub Pages + Electron file:// loading
+  base: './',
   plugins: [react(), gta5ModsApiPlugin()],
   server: {
     host: '0.0.0.0',
     port: 5175
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true
   }
 });
