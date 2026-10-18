@@ -10,7 +10,13 @@ import {
 } from 'lucide-react';
 import FiveForgeViewport from './FiveForgeViewport.jsx';
 import { FIVEFORGE_MANIFEST } from '../manifest.js';
-import { useCurrentUser, useCreditBalance } from '../adapters/bridge.js';
+import {
+  useCurrentUser,
+  useCreditBalance,
+  loadCarStudioDraft,
+  saveCarStudioDraft,
+  clearCarStudioDraft
+} from '../adapters/bridge.js';
 import { packageFiveMResource, triggerDownload, generateYtypXml } from '../engine/gtaAssetPipeline.js';
 import { buildSirenExportMeta } from '../engine/lcpdfrLightbarCatalog.js';
 import { GTA_DATABASE } from '../database-explorer/gtaDatabase.js';
@@ -43,7 +49,7 @@ export default function FiveForgeSuite({ className = "" }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Tool Workspace State
-  const [modelNameInput, setModelNameInput] = useState('custom_asset');
+  const [modelNameInput, setModelNameInput] = useState(() => loadCarStudioDraft()?.modelNameInput || 'police3');
   const [isExporting, setIsExporting] = useState(false);
   const [exportNotice, setExportNotice] = useState(null);
   const [copiedYtyp, setCopiedYtyp] = useState(false);
@@ -52,22 +58,27 @@ export default function FiveForgeSuite({ className = "" }) {
   // ==========================================
   // TOOL 3: ADD-ON CAR IMPORTER STATE & PRESETS
   // ==========================================
-  const [importerTab, setImporterTab] = useState('url'); // 'url' | 'file'
-  const [importerUrl, setImporterUrl] = useState('https://www.gta5-mods.com/vehicles/2000-ferrari-550-barchetta-pininfarina-add-on-template');
+  // Restore last session so refresh / closing tab doesn't wipe the user's car setup
+  const carDraft = useMemo(() => loadCarStudioDraft(), []);
+  const [draftNotice, setDraftNotice] = useState(() =>
+    carDraft?.savedAt ? 'تم استعادة آخر تعديل محفوظ تلقائياً — شغّلك ما يضيع' : null
+  );
+  const [importerTab, setImporterTab] = useState(() => carDraft?.importerTab || 'official'); // easiest path first
+  const [importerUrl, setImporterUrl] = useState(() => carDraft?.importerUrl || '');
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(100);
   const [importStage, setImportStage] = useState(4);
   const [importerActiveTab, setImporterActiveTab] = useState('meta'); // 'meta' | 'handling' | 'lighting'
-  const [importedCarMeta, setImportedCarMeta] = useState({
-    displayName: '2001 Ferrari 550 Barchetta Pininfarina',
-    spawnCode: '00barch',
-    category: 'Super',
-    audioHash: 'turismor',
-    topSpeed: 305,
-    accelMultiplier: 1.75,
-    brakeForce: 1.4,
-    drivetrain: 'RWD',
-    mass: 1690
+  const [importedCarMeta, setImportedCarMeta] = useState(() => carDraft?.importedCarMeta || {
+    displayName: 'Vapid Police Cruiser Interceptor',
+    spawnCode: 'police3',
+    category: 'Emergency',
+    audioHash: 'sultanrs',
+    topSpeed: 255,
+    accelMultiplier: 1.45,
+    brakeForce: 1.35,
+    drivetrain: 'AWD',
+    mass: 1850
   });
 
   // ==========================================
@@ -470,38 +481,44 @@ export default function FiveForgeSuite({ className = "" }) {
 
   // Tool Specific Interactive States
   // 1. Vehicle Editor V2, Badge Customizer & Siren/Wanan Studio
-  const [carPreset, setCarPreset] = useState('00barch');
-  const [carColor, setCarColor] = useState('#c81414');
-  const [debadged, setDebadged] = useState(false);
-  const [filledFlush, setFilledFlush] = useState(false);
-  const [badgeMode, setBadgeMode] = useState('original');
+  const [carPreset, setCarPreset] = useState(() => carDraft?.carPreset || 'police3');
+  const [carColor, setCarColor] = useState(() => carDraft?.carColor || '#0369a1');
+  const [debadged, setDebadged] = useState(() => Boolean(carDraft?.debadged));
+  const [filledFlush, setFilledFlush] = useState(() => Boolean(carDraft?.filledFlush));
+  const [badgeMode, setBadgeMode] = useState(() => carDraft?.badgeMode || 'original');
   const [customBadgeTexture, setCustomBadgeTexture] = useState(null);
-  const [badgeScale, setBadgeScale] = useState(1.0);
-  const [sirenType, setSirenType] = useState('auto');
-  const [sirenColorMode, setSirenColorMode] = useState('red_blue');
-  const [sirenOffsetX, setSirenOffsetX] = useState(0);
-  const [sirenOffsetY, setSirenOffsetY] = useState(0);
-  const [sirenOffsetZ, setSirenOffsetZ] = useState(0);
-  const [sirenRotX, setSirenRotX] = useState(0);
-  const [sirenRotY, setSirenRotY] = useState(0);
-  const [sirenRotZ, setSirenRotZ] = useState(0);
-  const [sirenScale, setSirenScale] = useState(1.0);
+  const [badgeScale, setBadgeScale] = useState(() => Number(carDraft?.badgeScale) || 1.0);
+  const [badgeOffsetX, setBadgeOffsetX] = useState(() => Number(carDraft?.badgeOffsetX) || 0);
+  const [badgeOffsetY, setBadgeOffsetY] = useState(() => Number(carDraft?.badgeOffsetY) || 0);
+  const [badgeOffsetZ, setBadgeOffsetZ] = useState(() => Number(carDraft?.badgeOffsetZ) || 0);
+  const [badgePitch, setBadgePitch] = useState(() => Number(carDraft?.badgePitch) || 0);
+  const [sirenType, setSirenType] = useState(() => carDraft?.sirenType || 'auto');
+  const [sirenColorMode, setSirenColorMode] = useState(() => carDraft?.sirenColorMode || 'red_blue');
+  const [sirenOffsetX, setSirenOffsetX] = useState(() => Number(carDraft?.sirenOffsetX) || 0);
+  const [sirenOffsetY, setSirenOffsetY] = useState(() => Number(carDraft?.sirenOffsetY) || 0);
+  const [sirenOffsetZ, setSirenOffsetZ] = useState(() => Number(carDraft?.sirenOffsetZ) || 0);
+  const [sirenRotX, setSirenRotX] = useState(() => Number(carDraft?.sirenRotX) || 0);
+  const [sirenRotY, setSirenRotY] = useState(() => Number(carDraft?.sirenRotY) || 0);
+  const [sirenRotZ, setSirenRotZ] = useState(() => Number(carDraft?.sirenRotZ) || 0);
+  const [sirenScale, setSirenScale] = useState(() => Number(carDraft?.sirenScale) || 1.0);
   const [customLightbarUrl, setCustomLightbarUrl] = useState(null);
   const [customLightbarFormat, setCustomLightbarFormat] = useState('obj');
   const [customLightbarCacheId, setCustomLightbarCacheId] = useState(null);
   const [customLightbarName, setCustomLightbarName] = useState(null);
   const [lcpdfrPackId, setLcpdfrPackId] = useState(null);
   const [sirenAudioPack, setSirenAudioPack] = useState(null);
-  const [pushbarEnabled, setPushbarEnabled] = useState(null);
+  const [pushbarEnabled, setPushbarEnabled] = useState(() =>
+    carDraft?.pushbarEnabled === undefined ? null : carDraft.pushbarEnabled
+  );
   const [isBlenderPageOpen, setIsBlenderPageOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.location.search.includes('blender=true');
   });
-  const [selectedRim, setSelectedRim] = useState('sport_vossen');
+  const [selectedRim, setSelectedRim] = useState(() => carDraft?.selectedRim || 'sport_vossen');
   const [selectedBodykit, setSelectedBodykit] = useState({ splitter: true, spoiler: true, exhaust: true });
-  const [stanceCamber, setStanceCamber] = useState(0);
-  const [stanceHeight, setStanceHeight] = useState(0);
-  const [stanceOffset, setStanceOffset] = useState(0);
+  const [stanceCamber, setStanceCamber] = useState(() => Number(carDraft?.stanceCamber) || 0);
+  const [stanceHeight, setStanceHeight] = useState(() => Number(carDraft?.stanceHeight) || 0);
+  const [stanceOffset, setStanceOffset] = useState(() => Number(carDraft?.stanceOffset) || 0);
   const [customVehicleUrl, setCustomVehicleUrl] = useState(null);
   const [customVehicleFormat, setCustomVehicleFormat] = useState('glb');
   const [customVehicleYtdUrl, setCustomVehicleYtdUrl] = useState(null);
@@ -637,18 +654,40 @@ export default function FiveForgeSuite({ className = "" }) {
       setImportStatusMsg('جاري تحميل وفك ضغط مجسم السيارة الأصلي (.RPF / .YFT + .YTD) من GTA5-Mods...');
 
       let data = null;
-      try {
-        const resp = await fetch(`/api/fetch-gta5mods-car?url=${encodeURIComponent(queryOrUrl.trim())}`);
-        if (resp.ok) {
-          data = await resp.json();
-        }
-      } catch {}
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isLocalDev = /^(localhost|127\.0\.0\.1)$/i.test(host);
+      const hasElectron = typeof window !== 'undefined' && typeof window.require === 'function';
 
-      if ((!data || !data.ok) && typeof window !== 'undefined' && window.require) {
+      // Vite middleware API only exists in local npm run dev (not on GitHub Pages).
+      if (isLocalDev) {
+        try {
+          const base = (import.meta.env.BASE_URL || './').replace(/\/?$/, '/');
+          const resp = await fetch(
+            `${base}api/fetch-gta5mods-car?url=${encodeURIComponent(queryOrUrl.trim())}`
+          );
+          if (resp.ok) {
+            data = await resp.json();
+          }
+        } catch {}
+      }
+
+      if ((!data || !data.ok) && hasElectron) {
         try {
           const { ipcRenderer } = window.require('electron');
           data = await ipcRenderer.invoke('fetch-gta5mods-car', queryOrUrl.trim());
         } catch {}
+      }
+
+      if (!data || !data.ok) {
+        if (!isLocalDev && !hasElectron) {
+          setImportStatusMsg(
+            'على GitHub Pages ما نقدر نسحب ملفات GTA5-Mods مباشرة. افتح تبويب «رفع ZIP» وارفع أرشيف السيارة، أو شغّل الاستوديو محلياً (`npm run dev`) / Electron.'
+          );
+          setImportProgress(100);
+          setImportStage(4);
+          setIsImporting(false);
+          return false;
+        }
       }
 
       if (data && data.ok && data.yftUrl) {
@@ -694,7 +733,71 @@ export default function FiveForgeSuite({ className = "" }) {
     return false;
   };
 
-  // Auto-load real YFT+YTD when car_importer opens with 00barch or ?carUrl=...
+  // Keep blender=true in the URL so refresh doesn't kick the user out of the 3D page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (isBlenderPageOpen) url.searchParams.set('blender', 'true');
+    else url.searchParams.delete('blender');
+    window.history.replaceState({}, '', url);
+  }, [isBlenderPageOpen]);
+
+  // Autosave car studio draft (serializable fields only — blob URLs are ephemeral)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      saveCarStudioDraft({
+        importerTab,
+        importerUrl,
+        modelNameInput,
+        carPreset,
+        carColor,
+        debadged,
+        filledFlush,
+        badgeMode,
+        badgeScale,
+        badgeOffsetX,
+        badgeOffsetY,
+        badgeOffsetZ,
+        badgePitch,
+        sirenType,
+        sirenColorMode,
+        sirenOffsetX,
+        sirenOffsetY,
+        sirenOffsetZ,
+        sirenRotX,
+        sirenRotY,
+        sirenRotZ,
+        sirenScale,
+        pushbarEnabled,
+        selectedRim,
+        stanceCamber,
+        stanceHeight,
+        stanceOffset,
+        lcpdfrPackId,
+        sirenAudioPack,
+        importedCarMeta: {
+          displayName: importedCarMeta?.displayName,
+          spawnCode: importedCarMeta?.spawnCode,
+          category: importedCarMeta?.category,
+          audioHash: importedCarMeta?.audioHash,
+          topSpeed: importedCarMeta?.topSpeed,
+          accelMultiplier: importedCarMeta?.accelMultiplier,
+          brakeForce: importedCarMeta?.brakeForce,
+          drivetrain: importedCarMeta?.drivetrain,
+          mass: importedCarMeta?.mass
+        }
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    importerTab, importerUrl, modelNameInput, carPreset, carColor, debadged, filledFlush,
+    badgeMode, badgeScale, badgeOffsetX, badgeOffsetY, badgeOffsetZ, badgePitch,
+    sirenType, sirenColorMode, sirenOffsetX, sirenOffsetY, sirenOffsetZ,
+    sirenRotX, sirenRotY, sirenRotZ, sirenScale, pushbarEnabled, selectedRim,
+    stanceCamber, stanceHeight, stanceOffset, lcpdfrPackId, sirenAudioPack, importedCarMeta
+  ]);
+
+  // Auto-load real YFT+YTD when car_importer opens with ?carUrl=...
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -870,24 +973,56 @@ export default function FiveForgeSuite({ className = "" }) {
         }
       };
 
+      const streamFiles = {};
+      const safeModel = String(modelNameInput || 'vehicle')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_');
+      const pullBlob = async (url, outName) => {
+        if (!url || !String(url).startsWith('blob:')) return;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return;
+          streamFiles[outName] = new Uint8Array(await res.arrayBuffer());
+        } catch {}
+      };
+      const meshExt = (customVehicleFormat || 'yft').toLowerCase();
+      if (customVehicleUrl && ['yft', 'ydr', 'ydd', 'ytd', 'obj', 'glb'].includes(meshExt)) {
+        await pullBlob(customVehicleUrl, `${safeModel}.${meshExt}`);
+      }
+      if (customVehicleYtdUrl) {
+        await pullBlob(customVehicleYtdUrl, `${safeModel}.ytd`);
+      }
+      if (customLightbarUrl && customLightbarFormat) {
+        const lbExt = String(customLightbarFormat).toLowerCase();
+        if (['yft', 'ydr', 'obj'].includes(lbExt)) {
+          await pullBlob(customLightbarUrl, `${safeModel}_lightbar.${lbExt}`);
+        }
+      }
+
       const { blob, filename } = await packageFiveMResource({
         resourceName: modelNameInput,
         modelName: modelNameInput,
         toolId: currentTool.id,
         toolCategory: currentTool.category,
-        customMeta
+        customMeta,
+        streamFiles
       });
 
       triggerDownload(blob, filename);
 
+      const streamCount = Object.keys(streamFiles).length;
       setExportNotice({
         type: 'success',
-        text: '✅ تم تصدير حزمة FiveM Addon بنجاح — مجاناً بدون نظام عملات'
+        text: streamCount
+          ? `✅ تم التصدير مع ${streamCount} ملف مجسم في stream/ — راجع الميتا قبل الستريم`
+          : '✅ تم تصدير الميتا + fxmanifest. المعاينة الحالية GLB جاهز — ارفع YFT/YTD أو ZIP عشان يدخلوا stream/'
       });
 
       // Add to export history
+      const sizeMb = (blob.size / (1024 * 1024)).toFixed(1);
       setExportHistoryLog(prev => [
-        { id: 'exp_' + Date.now(), name: filename, tool: currentTool.name, size: '8.4 MB', date: 'الآن', freeReExportDays: 7 },
+        { id: 'exp_' + Date.now(), name: filename, tool: currentTool.name, size: `${sizeMb} MB`, date: 'الآن', freeReExportDays: 7 },
         ...prev
       ]);
     } catch (err) {
@@ -1314,6 +1449,30 @@ export default function FiveForgeSuite({ className = "" }) {
                     {/* A) CAR IMPORTER (Tool #3) */}
                     {currentTool.id === 'car_importer' ? (
                       <div className="space-y-3">
+                        {/* Simple 3-step path so first-time users never get stuck */}
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[10px] text-emerald-100/90 leading-relaxed">
+                          <div className="font-bold text-emerald-300 mb-1">مسار سريع (3 خطوات):</div>
+                          <ol className="list-decimal pr-4 space-y-0.5 text-neutral-300">
+                            <li>اختر سيارة من «سيارات قراند الأصلية» (أو ارفع ZIP)</li>
+                            <li>افتح صفحة بلندر 3D وعدّل الونان / الشعار / اللون</li>
+                            <li>صدّر ZIP للفايف إم — الإعدادات تُحفظ تلقائياً لو أعدت تحميل الصفحة</li>
+                          </ol>
+                        </div>
+                        {draftNotice && (
+                          <div className="flex items-start justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[10px] text-amber-100">
+                            <span>{draftNotice}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearCarStudioDraft();
+                                setDraftNotice(null);
+                              }}
+                              className="shrink-0 text-amber-300/80 hover:text-white underline cursor-pointer"
+                            >
+                              مسح المسودة
+                            </button>
+                          </div>
+                        )}
                         {/* Source Tab Switcher (3 Modes) */}
                         <div className="flex items-center bg-neutral-900 p-1 rounded-2xl border border-neutral-800 text-xs gap-1">
                           <button
@@ -3065,8 +3224,13 @@ export default function FiveForgeSuite({ className = "" }) {
                 </div>
               </div>
 
-              {/* Right Column: 3D Viewport (7 cols on lg) */}
+              {/* Right Column: 3D Viewport (7 cols on lg) — unmount WebGL while Blender overlay is open */}
               <div className="lg:col-span-7 flex flex-col h-[620px] max-h-[84vh] lg:sticky lg:top-2">
+                {isBlenderPageOpen ? (
+                  <div className="w-full h-full min-h-[500px] rounded-3xl border border-neutral-800/80 bg-neutral-950/80 flex items-center justify-center text-neutral-500 text-xs">
+                    وضع بلندر مفتوح — المعاينة هنا متوقفة لتفريغ WebGL
+                  </div>
+                ) : (
                 <FiveForgeViewport toolTitle={`FiveForge 3D - ${currentTool.nameAr}`}>
                   {/* Dynamic 3D Scene Geometry depending on Tool */}
                   <group position={[0, 0.45, 0]}>
@@ -3082,6 +3246,10 @@ export default function FiveForgeSuite({ className = "" }) {
                         badgeMode={badgeMode}
                         customBadgeTexture={customBadgeTexture}
                         badgeScale={badgeScale}
+                        badgeOffsetX={badgeOffsetX}
+                        badgeOffsetY={badgeOffsetY}
+                        badgeOffsetZ={badgeOffsetZ}
+                        badgePitch={badgePitch}
                         sirenType={sirenType}
                         sirenColorMode={sirenColorMode}
                         sirenOffsetX={sirenOffsetX}
@@ -3158,6 +3326,7 @@ export default function FiveForgeSuite({ className = "" }) {
                     )}
                   </group>
                 </FiveForgeViewport>
+                )}
               </div>
             </div>
           </div>
@@ -3579,6 +3748,14 @@ export default function FiveForgeSuite({ className = "" }) {
         setCustomBadgeTexture={setCustomBadgeTexture}
         badgeScale={badgeScale}
         setBadgeScale={setBadgeScale}
+        badgeOffsetX={badgeOffsetX}
+        setBadgeOffsetX={setBadgeOffsetX}
+        badgeOffsetY={badgeOffsetY}
+        setBadgeOffsetY={setBadgeOffsetY}
+        badgeOffsetZ={badgeOffsetZ}
+        setBadgeOffsetZ={setBadgeOffsetZ}
+        badgePitch={badgePitch}
+        setBadgePitch={setBadgePitch}
         sirenType={sirenType}
         setSirenType={setSirenType}
         sirenColorMode={sirenColorMode}

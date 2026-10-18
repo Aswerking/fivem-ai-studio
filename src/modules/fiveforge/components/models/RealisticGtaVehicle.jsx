@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { parseYftToThreeScene } from '../../../../utils/yftVehicleLoader.js';
+import { parseYftToThreeScene, parseYdrToThreeScene } from '../../../../utils/yftVehicleLoader.js';
 import { getCachedCustomLightbarScene } from '../../engine/customLightbarLoader.js';
 
 // ============================================================================
@@ -934,6 +934,7 @@ export default function RealisticGtaVehicle({
   badgeMode = 'original',
   customBadgeTexture = null,
   badgeScale = 1.0,
+  badgeOffsetX = 0,
   badgeOffsetY = 0,
   badgeOffsetZ = 0,
   badgePitch = 0,
@@ -1121,6 +1122,32 @@ export default function RealisticGtaVehicle({
         .catch(() => {
           if (active) setCustomLightbarObj(null);
         });
+    } else if (fmt === 'ydr' || customLightbarUrl.toLowerCase().endsWith('.ydr')) {
+      fetch(customLightbarUrl)
+        .then((r) => r.arrayBuffer())
+        .then(async (buf) => {
+          if (!active) return;
+          const scene = await parseYdrToThreeScene(new Uint8Array(buf));
+          if (!scene) {
+            if (active) setCustomLightbarObj(null);
+            return;
+          }
+          const g = new THREE.Group();
+          g.name = 'custom_lcpdfr_lightbar';
+          g.add(scene);
+          const box = new THREE.Box3().setFromObject(g);
+          const size = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(center);
+          const scale = 1.35 / (Math.max(size.x, size.y, size.z) || 1);
+          scene.position.set(-center.x, -box.min.y, -center.z);
+          g.scale.setScalar(scale);
+          setCustomLightbarObj(g);
+        })
+        .catch(() => {
+          if (active) setCustomLightbarObj(null);
+        });
     }
 
     return () => {
@@ -1163,14 +1190,26 @@ export default function RealisticGtaVehicle({
     let effectiveMetalness = 0.85;
     let effectiveRoughness = 0.18;
 
-    if (presetType === 'police' && (!carColor || carColor === '#0ea5e9' || carColor === '#0369a1')) {
-      effectiveColor = '#0a0a0f'; // LSPD Gloss Midnight Black
-      effectiveMetalness = 0.9;
-      effectiveRoughness = 0.14;
+    // Keep catalog police blue (#0369a1). Only remap generic sports default.
+    if (presetType === 'police' && (!carColor || carColor === '#0ea5e9')) {
+      effectiveColor = '#1a2740'; // LSPD dark interceptor blue-black (visible in studio)
+      effectiveMetalness = 0.55;
+      effectiveRoughness = 0.28;
     } else if (presetType === 'armored' && (!carColor || carColor === '#0ea5e9')) {
       effectiveColor = '#1e293b'; // Tactical Armored Slate
       effectiveMetalness = 0.72;
       effectiveRoughness = 0.38;
+    } else if (/^#[0-9a-f]{6}$/i.test(effectiveColor)) {
+      const n = parseInt(effectiveColor.slice(1), 16);
+      const r = (n >> 16) & 255;
+      const g = (n >> 8) & 255;
+      const b = n & 255;
+      if (r + g + b < 48) {
+        const lift = (c) => Math.min(255, Math.max(c, 34));
+        effectiveColor = `#${[lift(r), lift(g), lift(b)].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+        effectiveMetalness = Math.min(effectiveMetalness, 0.58);
+        effectiveRoughness = Math.max(effectiveRoughness, 0.26);
+      }
     }
 
     let customTex = null;
@@ -1475,7 +1514,7 @@ export default function RealisticGtaVehicle({
       {effectiveBadgeMode !== 'original' && effectiveBadgeMode !== 'debadged' && (
         <group
           name="custom_vehicle_badges"
-          position={[frontPos[0], frontPos[1] + badgeOffsetY, frontPos[2] + badgeOffsetZ]}
+          position={[frontPos[0] + badgeOffsetX, frontPos[1] + badgeOffsetY, frontPos[2] + badgeOffsetZ]}
         >
           <group ref={badgeGroupRef}>
           {/* Front Nose / Hood / Grille Emblem (at [0,0,0] of badgeGroupRef!) */}

@@ -11,8 +11,44 @@ import { FIVEFORGE_MANIFEST } from '../manifest.js';
 const STORAGE_KEYS = {
   CREDITS: 'fiveforge_user_credits',
   HISTORY: 'fiveforge_export_history',
-  USER: 'fiveforge_user_profile'
+  USER: 'fiveforge_user_profile',
+  CAR_DRAFT: 'fiveforge_car_studio_draft_v1'
 };
+
+/** Load last car-studio settings so refresh / accidental close doesn't wipe work. */
+export function loadCarStudioDraft() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(STORAGE_KEYS.CAR_DRAFT);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist serializable car-studio fields only (never blob: URLs). */
+export function saveCarStudioDraft(draft) {
+  try {
+    if (typeof localStorage === 'undefined' || !draft) return;
+    localStorage.setItem(
+      STORAGE_KEYS.CAR_DRAFT,
+      JSON.stringify({ ...draft, savedAt: Date.now() })
+    );
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function clearCarStudioDraft() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.CAR_DRAFT);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function useCurrentUser() {
   const [user, setUser] = useState(() => {

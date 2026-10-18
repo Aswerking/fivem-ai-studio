@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, TransformControls } from '@react-three/drei';
+import { OrbitControls, Grid, TransformControls, Environment, ContactShadows } from '@react-three/drei';
 import {
   ArrowRight,
   Download,
@@ -116,6 +116,14 @@ export default function BlenderCarViewportPage({
   setCustomBadgeTexture,
   badgeScale,
   setBadgeScale,
+  badgeOffsetX = 0,
+  setBadgeOffsetX,
+  badgeOffsetY = 0,
+  setBadgeOffsetY,
+  badgeOffsetZ = 0,
+  setBadgeOffsetZ,
+  badgePitch = 0,
+  setBadgePitch,
   sirenType,
   setSirenType,
   sirenColorMode,
@@ -182,13 +190,14 @@ export default function BlenderCarViewportPage({
   const [lcpdfrStatus, setLcpdfrStatus] = useState('');
   const [isLoadingLightbar, setIsLoadingLightbar] = useState(false);
 
-  // Fine Badge & Siren Alignment States
+  // Fine Badge & Siren Alignment States (offsets lifted to Suite so they survive close/refresh)
   const [frontBadgeMount, setFrontBadgeMount] = useState('auto'); // 'auto' | 'hood' | 'grille'
   const [showDoorBadges, setShowDoorBadges] = useState(false);
-  const [badgeOffsetY, setBadgeOffsetY] = useState(0);
-  const [badgeOffsetZ, setBadgeOffsetZ] = useState(0);
-  const [badgePitch, setBadgePitch] = useState(0);
   const [showGrilleStrobes, setShowGrilleStrobes] = useState(true);
+  const setBadgeOffsetXSafe = setBadgeOffsetX || (() => {});
+  const setBadgeOffsetYSafe = setBadgeOffsetY || (() => {});
+  const setBadgeOffsetZSafe = setBadgeOffsetZ || (() => {});
+  const setBadgePitchSafe = setBadgePitch || (() => {});
 
   // Interactive 3D Blender Transform Gizmo ('none' | 'siren' | 'badge')
   const [gizmoTarget, setGizmoTarget] = useState('none');
@@ -491,13 +500,61 @@ export default function BlenderCarViewportPage({
           {/* Exact Blender 3D Viewport Dark Grey Background (#393939) */}
           <color attach="background" args={['#393939']} />
 
-          {/* Blender Studio Lighting */}
-          <ambientLight intensity={0.95} />
-          <directionalLight position={[6, 10, 6]} intensity={1.7} castShadow shadow-mapSize={2048} />
-          <directionalLight position={[-6, 5, -6]} intensity={0.85} />
-          <pointLight position={[0, 3, -3]} intensity={0.6} color="#ffffff" />
+          {/* Blender Studio Lighting — hemisphere + env map so metallic paint isn't a black void */}
+          <hemisphereLight args={['#c8d0dc', '#3a3a3a', 0.85]} />
+          <ambientLight intensity={1.15} />
+          <directionalLight position={[6, 10, 6]} intensity={2.1} castShadow shadow-mapSize={2048} />
+          <directionalLight position={[-6, 5, -6]} intensity={1.15} />
+          <directionalLight position={[0, 8, -4]} intensity={0.7} color="#e8eef8" />
+          <pointLight position={[0, 3, -3]} intensity={0.75} color="#ffffff" />
+
+          {/* Grid outside Suspense so the floor always paints even while GLB loads */}
+          <group position={[0, 0, 0]}>
+            <Grid
+              infiniteGrid
+              position={[0, -0.001, 0]}
+              cellSize={0.5}
+              cellThickness={0.85}
+              cellColor="#5a5a5a"
+              sectionSize={2.5}
+              sectionThickness={1.35}
+              sectionColor="#6e6e6e"
+              fadeDistance={45}
+              fadeStrength={1.2}
+            />
+            <mesh position={[0, 0.001, 0]}>
+              <boxGeometry args={[80, 0.004, 0.015]} />
+              <meshBasicMaterial color="#e63946" />
+            </mesh>
+            <mesh position={[0, 0.001, 0]} rotation={[0, Math.PI / 2, 0]}>
+              <boxGeometry args={[80, 0.004, 0.015]} />
+              <meshBasicMaterial color="#65b741" />
+            </mesh>
+            <group position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <mesh>
+                <ringGeometry args={[0.13, 0.155, 36]} />
+                <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
+              </mesh>
+              {[0, 1, 2, 3, 4, 5].map((seg) => (
+                <mesh key={seg} rotation={[0, 0, (seg * Math.PI) / 3]}>
+                  <ringGeometry args={[0.128, 0.157, 8, 1, 0, Math.PI / 6]} />
+                  <meshBasicMaterial color="#ef4444" side={THREE.DoubleSide} />
+                </mesh>
+              ))}
+              <mesh>
+                <planeGeometry args={[0.38, 0.012]} />
+                <meshBasicMaterial color="#111111" side={THREE.DoubleSide} />
+              </mesh>
+              <mesh rotation={[0, 0, Math.PI / 2]}>
+                <planeGeometry args={[0.38, 0.012]} />
+                <meshBasicMaterial color="#111111" side={THREE.DoubleSide} />
+              </mesh>
+            </group>
+            <ContactShadows position={[0, 0.002, 0]} opacity={0.45} scale={12} blur={2.2} far={5} />
+          </group>
 
           <Suspense fallback={null}>
+            <Environment preset="city" environmentIntensity={0.55} />
             {/* THE 3D IMPORTED VEHICLE CENTERED RIGHT ON THE BLENDER 3D CURSOR */}
             <group position={[0, 0.38, 0]}>
               <RealisticGtaVehicle
@@ -509,6 +566,7 @@ export default function BlenderCarViewportPage({
                 badgeMode={badgeMode}
                 customBadgeTexture={customBadgeTexture}
                 badgeScale={badgeScale}
+                badgeOffsetX={badgeOffsetX}
                 badgeOffsetY={badgeOffsetY}
                 badgeOffsetZ={badgeOffsetZ}
                 badgePitch={badgePitch}
@@ -593,60 +651,27 @@ export default function BlenderCarViewportPage({
                   mode={gizmoMode}
                   size={0.7}
                   onMouseDown={() => setOrbitEnabled(false)}
-                  onMouseUp={() => setOrbitEnabled(true)}
+                  onMouseUp={() => {
+                    setOrbitEnabled(true);
+                    const obj = badgeGroupRef.current;
+                    if (!obj) return;
+                    if (gizmoMode === 'translate') {
+                      setBadgeOffsetXSafe((prev) => prev + obj.position.x);
+                      setBadgeOffsetYSafe((prev) => prev + obj.position.y);
+                      setBadgeOffsetZSafe((prev) => prev + obj.position.z);
+                    }
+                    if (gizmoMode === 'scale' && typeof setBadgeScale === 'function') {
+                      const sc = (obj.scale.x + obj.scale.y + obj.scale.z) / 3;
+                      setBadgeScale((prev) => Math.max(0.35, Math.min(2.8, prev * sc)));
+                    }
+                    obj.position.set(0, 0, 0);
+                    obj.rotation.set(0, 0, 0);
+                    obj.scale.set(1, 1, 1);
+                  }}
                 />
               )}
             </group>
 
-            {/* AUTHENTIC BLENDER FLOOR GRID + RED X-AXIS + GREEN Y-AXIS + 3D CURSOR AT ORIGIN [0,0,0] */}
-            <group position={[0, 0, 0]}>
-              <Grid
-                infiniteGrid
-                position={[0, -0.001, 0]}
-                cellSize={0.5}
-                cellThickness={0.7}
-                cellColor="#4c4c4c"
-                sectionSize={2.5}
-                sectionThickness={1.2}
-                sectionColor="#2e2e2e"
-                fadeDistance={45}
-                fadeStrength={1.5}
-              />
-
-              {/* Red X-Axis Line */}
-              <mesh position={[0, 0.001, 0]}>
-                <boxGeometry args={[80, 0.004, 0.015]} />
-                <meshBasicMaterial color="#e63946" />
-              </mesh>
-
-              {/* Green Y-Axis Line */}
-              <mesh position={[0, 0.001, 0]} rotation={[0, Math.PI / 2, 0]}>
-                <boxGeometry args={[80, 0.004, 0.015]} />
-                <meshBasicMaterial color="#65b741" />
-              </mesh>
-
-              {/* Blender 3D Cursor at [0, 0, 0] (Red & White Dashed Ring + Black Crosshair) */}
-              <group position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <mesh>
-                  <ringGeometry args={[0.13, 0.155, 36]} />
-                  <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
-                </mesh>
-                {[0, 1, 2, 3, 4, 5].map((seg) => (
-                  <mesh key={seg} rotation={[0, 0, (seg * Math.PI) / 3]}>
-                    <ringGeometry args={[0.128, 0.157, 8, 1, 0, Math.PI / 6]} />
-                    <meshBasicMaterial color="#ef4444" side={THREE.DoubleSide} />
-                  </mesh>
-                ))}
-                <mesh>
-                  <planeGeometry args={[0.38, 0.012]} />
-                  <meshBasicMaterial color="#111111" side={THREE.DoubleSide} />
-                </mesh>
-                <mesh rotation={[0, 0, Math.PI / 2]}>
-                  <planeGeometry args={[0.38, 0.012]} />
-                  <meshBasicMaterial color="#111111" side={THREE.DoubleSide} />
-                </mesh>
-              </group>
-            </group>
           </Suspense>
 
           <OrbitControls
@@ -1291,9 +1316,10 @@ export default function BlenderCarViewportPage({
                         type="button"
                         onClick={() => {
                           setBadgeScale(1.0);
-                          setBadgeOffsetY(0);
-                          setBadgeOffsetZ(0);
-                          setBadgePitch(0);
+                          setBadgeOffsetXSafe(0);
+                          setBadgeOffsetYSafe(0);
+                          setBadgeOffsetZSafe(0);
+                          setBadgePitchSafe(0);
                           setFrontBadgeMount('auto');
                           if (badgeGroupRef.current) {
                             badgeGroupRef.current.position.set(0, 0, 0);
@@ -1378,8 +1404,21 @@ export default function BlenderCarViewportPage({
                       />
                     </div>
 
-                    {/* Badge Height Offset Y */}
+                    {/* Badge Offsets */}
                     <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] text-neutral-300">
+                        <span>تحريك الشعار يمين/يسار (Offset X):</span>
+                        <span className="font-mono text-amber-400">{badgeOffsetX.toFixed(3)}m</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-0.25"
+                        max="0.25"
+                        step="0.005"
+                        value={badgeOffsetX}
+                        onChange={(e) => setBadgeOffsetXSafe(parseFloat(e.target.value))}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
                       <div className="flex justify-between text-[10px] text-neutral-300">
                         <span>ارتفاع الشعار للأعلى/الأسفل (Offset Y):</span>
                         <span className="font-mono text-amber-400">{badgeOffsetY.toFixed(3)}m</span>
@@ -1390,7 +1429,7 @@ export default function BlenderCarViewportPage({
                         max="0.15"
                         step="0.005"
                         value={badgeOffsetY}
-                        onChange={(e) => setBadgeOffsetY(parseFloat(e.target.value))}
+                        onChange={(e) => setBadgeOffsetYSafe(parseFloat(e.target.value))}
                         className="w-full accent-amber-500 cursor-pointer"
                       />
                     </div>
@@ -1407,7 +1446,7 @@ export default function BlenderCarViewportPage({
                         max="0.15"
                         step="0.005"
                         value={badgeOffsetZ}
-                        onChange={(e) => setBadgeOffsetZ(parseFloat(e.target.value))}
+                        onChange={(e) => setBadgeOffsetZSafe(parseFloat(e.target.value))}
                         className="w-full accent-amber-500 cursor-pointer"
                       />
                     </div>
@@ -1424,7 +1463,7 @@ export default function BlenderCarViewportPage({
                         max="1.2"
                         step="0.05"
                         value={badgePitch}
-                        onChange={(e) => setBadgePitch(parseFloat(e.target.value))}
+                        onChange={(e) => setBadgePitchSafe(parseFloat(e.target.value))}
                         className="w-full accent-amber-500 cursor-pointer"
                       />
                     </div>

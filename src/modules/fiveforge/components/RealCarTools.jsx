@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search, Download, Zap, UploadCloud, AlertCircle, CheckCircle2,
   FileCode, Car, RefreshCw, Layers, Eye, Copy, Check
@@ -15,6 +15,9 @@ import { getVehicleThumbFallback, getVehicleThumbUrl } from '../engine/vehicleTh
 
 export function VehicleThumb({ spawn, color, className = '' }) {
   const [src, setSrc] = useState(() => getVehicleThumbUrl(spawn, color));
+  useEffect(() => {
+    setSrc(getVehicleThumbUrl(spawn, color));
+  }, [spawn, color]);
   return (
     <img
       src={src}
