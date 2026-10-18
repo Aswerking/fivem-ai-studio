@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
 
 const require = createRequire(import.meta.url);
 
@@ -76,6 +78,11 @@ export default defineConfig({
   // Relative base works for GitHub Pages + Electron file:// loading
   base: './',
   plugins: [react(), gta5ModsApiPlugin()],
+  css: {
+    postcss: {
+      plugins: [tailwindcss(), autoprefixer()]
+    }
+  },
   server: {
     host: '0.0.0.0',
     port: 5175
