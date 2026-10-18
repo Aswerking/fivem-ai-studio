@@ -10,7 +10,11 @@ import {
   buildVanillaHandlingResource,
   downloadBlob
 } from '../engine/realCarImporter.js';
-import { resolveVehiclePresetType } from './models/RealisticGtaVehicle.jsx';
+import {
+  resolveVehiclePresetType,
+  getArchetypeLabelAr,
+  ARCHETYPE_LABELS_AR
+} from './models/RealisticGtaVehicle.jsx';
 import { getVehicleThumbFallback, getVehicleThumbUrl } from '../engine/vehicleThumbnails.js';
 
 export function VehicleThumb({ spawn, color, className = '' }) {
@@ -29,17 +33,9 @@ export function VehicleThumb({ spawn, color, className = '' }) {
   );
 }
 
-const ARCHETYPE_BADGES = {
-  hypercar: 'Aventador V12 3D',
-  supercar: 'Ferrari 458 3D',
-  jdm: 'Tuner Coupe 3D',
-  sports: 'BMW M4 G82 3D',
-  muscle: 'Widebody Muscle 3D',
-  sedan: 'Executive Sedan 3D',
-  police: 'Police Interceptor 3D',
-  suv: 'AMG G63 4x4 3D',
-  armored: 'Armored Tactical 3D'
-};
+const ARCHETYPE_BADGES = Object.fromEntries(
+  Object.entries(ARCHETYPE_LABELS_AR).map(([k, v]) => [k, `معاينة: ${v.split('(')[0].trim()}`])
+);
 
 // =====================================================================
 // كتالوج سيارات GTA V / FiveM الأصلية الموحد (14 مميزة + 680 سيارة أصلية)
@@ -189,9 +185,12 @@ export function VanillaCarCatalog({ selectedSpawn, onSelect, featuredCars = [] }
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                 {isSelected && (
                   <span className="absolute top-1.5 left-1.5 text-[8px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-black">
-                    نشطة 3D
+                    مختارة
                   </span>
                 )}
+                <span className="absolute bottom-1 left-1.5 max-w-[90%] truncate text-[8px] bg-black/75 text-sky-200 px-1.5 py-0.5 rounded border border-sky-500/30 font-bold">
+                  {archBadge}
+                </span>
                 <span
                   className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full border border-white/40"
                   style={{ backgroundColor: car.color }}
@@ -199,13 +198,13 @@ export function VanillaCarCatalog({ selectedSpawn, onSelect, featuredCars = [] }
               </div>
               <div className="p-2 space-y-1">
                 <div className="text-[11px] font-bold text-white truncate">{car.name}</div>
-                <div className="flex items-center justify-between text-[9px] font-mono w-full">
+                <div className="flex items-center justify-between text-[9px] font-mono w-full gap-1">
                   <span className="text-amber-400 truncate">
                     {car.spawn} <span className="text-neutral-500">· {car.classAr || car.category}</span>
                   </span>
-                  <span className="text-[8px] bg-black/50 text-neutral-300 px-1.5 py-0.2 rounded border border-neutral-800 shrink-0">
-                    {car.badge || archBadge}
-                  </span>
+                </div>
+                <div className="text-[8px] text-neutral-400 truncate" title={getArchetypeLabelAr(car.spawn, car.category)}>
+                  الفيو 3D = {getArchetypeLabelAr(car.spawn, car.category)}
                 </div>
               </div>
             </button>

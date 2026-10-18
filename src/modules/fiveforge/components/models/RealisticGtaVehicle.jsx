@@ -27,7 +27,70 @@ export const VEHICLE_GLB_MAP = {
   sedan: assetUrl('models/raw_4door_sedan.glb'), // 2023 4-Door Executive Sedan
   police: assetUrl('models/raw_4door_sedan.glb'), // 4-Door Police Cruiser Interceptor
   suv: assetUrl('models/raw_g63_suv.glb'), // Mercedes-AMG G63 4x4 SUV
-  armored: assetUrl('models/raw_g63_suv.glb') // Armored Tactical SUV / Kuruma
+  armored: assetUrl('models/raw_g63_suv.glb') // Tactical armored SUV (NOT Kuruma — Kuruma is sedan)
+};
+
+/** Human-readable Arabic labels for the stand-in mesh the user actually sees */
+export const ARCHETYPE_LABELS_AR = {
+  hypercar: 'لافنبورغيني أفينتادور (هايبركار)',
+  supercar: 'فيراري 458 (سوبركار)',
+  jdm: 'كوبيه تونينج / E30',
+  sports: 'BMW M4 G82 (كوبيه)',
+  muscle: 'كوبيه وايدبودي (عضلات)',
+  sedan: 'سيدان 4 أبواب',
+  police: 'دورية سيدان 4 أبواب',
+  suv: 'مرسيدس G63 (دفع رباعي)',
+  armored: 'مرسيدس G63 مصفح (تكتيكي)'
+};
+
+/**
+ * Exact spawn → archetype. Prevents wrong bodies (e.g. kuruma2 must NOT become G63).
+ * Only 6 GLB meshes exist; this picks the closest honest body type per known car.
+ */
+export const SPAWN_ARCHETYPE_MAP = {
+  // Emergency
+  police3: 'police',
+  police: 'police',
+  police2: 'police',
+  police4: 'police',
+  sheriff: 'police',
+  sheriff2: 'police',
+  fbi: 'police',
+  fbi2: 'police',
+  pranger: 'police',
+  // Sedans / armored sedan (Kuruma is a 4-door — never the G63 mesh)
+  kuruma2: 'sedan',
+  kuruma: 'sedan',
+  schafter3: 'sedan',
+  schafter: 'sedan',
+  tailgater: 'sedan',
+  // Sports / Euro coupe
+  revolter: 'sports',
+  drafter: 'sports',
+  jugular: 'sports',
+  // JDM / tuner
+  sultanrs: 'jdm',
+  sultan: 'jdm',
+  elegy2: 'jdm',
+  jester4: 'jdm',
+  // Hyper / super
+  zentorno: 'hypercar',
+  t20: 'hypercar',
+  adder: 'hypercar',
+  turismor: 'supercar',
+  comet6: 'supercar',
+  // SUV / G-Wagen stand-ins
+  dubsta3: 'suv',
+  g63: 'suv',
+  baller: 'suv',
+  // Muscle
+  buffalo4: 'muscle',
+  gauntlet4: 'muscle',
+  dominator: 'muscle',
+  // True tactical armored SUVs / military (G63 stand-in is OK)
+  insurgent: 'armored',
+  nightshark: 'armored',
+  menacer: 'armored'
 };
 
 const gltfCache = new Map();
@@ -559,35 +622,39 @@ function classifyByKeyword(str = '') {
   if (/police|cop|sheriff|fbi|pranger|riot|lguard|ambulance|intercept|lspd|patrol|emergency|طوارئ|شرطة/.test(s)) {
     return 'police';
   }
-  // 2. Armored / Military / Tactical 4x4 (G63 Armored Tactical)
-  if (/kuruma2|armored|insurgent|nightshark|menacer|barrage|apc|rhino|khanjali|halftrack|scarab|zhaba|squaddie|مصفحة|عسكرية/.test(s)) {
+  // 2. Armored sedan first (Kuruma family = 4-door, never G63 SUV)
+  if (/^kuruma2?$|kuruma/.test(s)) {
+    return 'sedan';
+  }
+  // 3. Armored / Military / Tactical 4x4 (G63 mesh stand-in)
+  if (/armored|insurgent|nightshark|menacer|barrage|apc|rhino|khanjali|halftrack|scarab|zhaba|squaddie|مصفحة|عسكرية/.test(s)) {
     return 'armored';
   }
-  // 3. SUVs / Off-Road / Pickups / Trucks / Vans (Mercedes-AMG G63 4x4)
+  // 4. SUVs / Off-Road / Pickups / Trucks / Vans (Mercedes-AMG G63 4x4)
   if (/g63|gwagon|dubsta|baller|granger|toros|rebla|novak|astron|issi8|huntley|rocoto|cavalcade|patriot|mesa|sandking|kamacho|caracara|riata|contender|guardian|bison|bobcat|sadler|rebel|trophy|brawler|hellion|everon|outlaw|vagrant|draugur|monstrociti|terminus|jeep|wrangler|tahoe|suburban|yukon|escalade|landcruiser|prado|hilux|raptor|trx|hummer|suv|off_road|offroad|vans|commercial|utility|عائلية|رباعي|بيك أب|شاحنات/.test(s)) {
     return 'suv';
   }
-  // 4. 4-Door Executive Sedans (2023 4-Door Sedan)
+  // 5. 4-Door Executive Sedans (2023 4-Door Sedan)
   if (/schafter|tailgater|cinquemila|deity|jubilee|cognoscenti|superd|windsor|oracle|fugitive|intruder|premier|stanier|washington|stratum|stretch|asterope|glendale|ingot|primo|regina|romero|stafford|surge|warrener|rhinehart|vorshlaghammer|taxi|crown|caprice|camry|accord|sonata|lexus|s500|e63|c63|sedans|سيدان/.test(s)) {
     return 'sedan';
   }
-  // 5. V12 Hypercars (Lamborghini Aventador V12)
+  // 6. V12 Hypercars (Lamborghini Aventador V12)
   if (/zentorno|torero|adder|emerus|ignus|tempesta|reaper|vacca|infernus|tezeract|zorrusso|krieger|autarch|entity|tyrant|xa21|visione|vagner|cyclone|scramjet|vigilante|deveste|thrax|nero|tigon|zeno|virtue|pipistrello|lambo|aventador|huracan|revuelto|veneno|countach|bugatti|chiron|pagani|koenigsegg/.test(s)) {
     return 'hypercar';
   }
-  // 6. Exotic Supercars (Ferrari 458 Spider Supercar)
+  // 7. Exotic Supercars (Ferrari 458 Spider Supercar)
   if (/turismo|t20|comet|itali|furia|osiris|fmj|cheetah|corsita|omnisegt|sm722|bestia|carbonizzare|seven70|pariah|raiden|neon|prototipo|pfister811|voltic|penetrator|gp1|sc1|tyrus|le7b|taipan|niobe|ferrari|mclaren|porsche|gt3|911|f8|458|488|corvette|coquette|banshee|super|سوبر/.test(s)) {
     return 'supercar';
   }
-  // 7. Modern Euro/Sports Coupes (BMW M4 Competition G82)
+  // 8. Modern Euro/Sports Coupes (BMW M4 Competition G82)
   if (/revolter|drafter|cypher|sentinel|zion|schwartzer|schlagen|jugular|komoda|sugoi|vstr|bmw|m4|m3|m5|m8|audi|rs6|rs7|coupes|كوبيه/.test(s)) {
     return 'sports';
   }
-  // 8. JDM / Tuner / Sports Classics / Compacts (BMW E30 M3 / Tuner Coupe)
-  if (/sultan|elegy|jester|zr350|futo|calico|euros|remus|rt3000|vectre|previon|kanjo|penumbra|kuruma|blista|brioso|asbo|club|weevil|issi|panto|prairie|rhapsody|dilettante|casco|cheburek|feltzer3|gt500|infernus2|jb700|mamba|manana|michelli|monroe|nebula|peyote|pigalle|rapidgt3|retinue|savestra|stinger|stromberg|swinger|toreador|tornado|tropos|viseris|z190|zion3|ztype|skyline|supra|gtr|r32|r34|r35|subaru|mitsubishi|\bevo\b|nissan|toyota|mazda|rx7|honda|civic|e30|ae86|drift|jdm|classic|compacts|كلاسيك|مدمجة/.test(s)) {
+  // 9. JDM / Tuner / Sports Classics / Compacts (BMW E30 M3 / Tuner Coupe)
+  if (/sultan|elegy|jester|zr350|futo|calico|euros|remus|rt3000|vectre|previon|kanjo|penumbra|blista|brioso|asbo|club|weevil|issi|panto|prairie|rhapsody|dilettante|casco|cheburek|feltzer3|gt500|infernus2|jb700|mamba|manana|michelli|monroe|nebula|peyote|pigalle|rapidgt3|retinue|savestra|stinger|stromberg|swinger|toreador|tornado|tropos|viseris|z190|zion3|ztype|skyline|supra|gtr|r32|r34|r35|subaru|mitsubishi|\bevo\b|nissan|toyota|mazda|rx7|honda|civic|e30|ae86|drift|jdm|classic|compacts|كلاسيك|مدمجة/.test(s)) {
     return 'jdm';
   }
-  // 9. American Muscle (BMW M4 Widebody Coupe)
+  // 10. American Muscle (BMW M4 Widebody Coupe)
   if (/buffalo|gauntlet|dominator|vigero|sabregt|dukes|ellie|tampa|ruiner|blade|buccaneer|chino|clique|coquette3|deviant|faction|greenwood|hermes|hotknife|hustler|impaler|imperator|lurcher|moonbeam|nightshade|phoenix|picador|ratloader|slamvan|stallion|tulip|vamos|virgo|voodoo|weevil2|yosemite|dodge|charger|challenger|hellcat|mustang|camaro|muscle|عضلات/.test(s)) {
     return 'muscle';
   }
@@ -596,10 +663,22 @@ function classifyByKeyword(str = '') {
 
 /**
  * Classifies any GTA V spawn code, vehicle name, or GTA5-Mods slug into one of our
- * 6 distinct real 3D vehicle archetypes. Prioritizes carPreset before vehicleCategory.
+ * GLB archetypes. Exact spawn map wins first so catalog picks never get the wrong body.
  */
 export function resolveVehiclePresetType(carPreset = '', vehicleCategory = '') {
+  const spawn = String(carPreset || '')
+    .toLowerCase()
+    .trim();
+  if (spawn && SPAWN_ARCHETYPE_MAP[spawn]) {
+    return SPAWN_ARCHETYPE_MAP[spawn];
+  }
   return classifyByKeyword(carPreset) || classifyByKeyword(vehicleCategory) || 'sports';
+}
+
+/** Short Arabic label for the mesh actually shown in the viewport */
+export function getArchetypeLabelAr(carPreset = '', vehicleCategory = '') {
+  const type = resolveVehiclePresetType(carPreset, vehicleCategory);
+  return ARCHETYPE_LABELS_AR[type] || ARCHETYPE_LABELS_AR.sports;
 }
 
 const badgeTextureCache = new Map();

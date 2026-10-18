@@ -20,7 +20,7 @@ import {
 import { packageFiveMResource, triggerDownload, generateYtypXml } from '../engine/gtaAssetPipeline.js';
 import { buildSirenExportMeta } from '../engine/lcpdfrLightbarCatalog.js';
 import { GTA_DATABASE } from '../database-explorer/gtaDatabase.js';
-import RealisticGtaVehicle from './models/RealisticGtaVehicle.jsx';
+import RealisticGtaVehicle, { getArchetypeLabelAr } from './models/RealisticGtaVehicle.jsx';
 import RealisticGtaPed from './models/RealisticGtaPed.jsx';
 import RealisticGtaWeapon from './models/RealisticGtaWeapon.jsx';
 import RealisticGtaChain from './models/RealisticGtaChain.jsx';
@@ -909,11 +909,14 @@ export default function FiveForgeSuite({ className = "" }) {
       return;
     }
 
-    // Official / catalog picks use built-in GLB archetypes
+    // Official / catalog picks use built-in GLB archetypes (closest body — not the GTA mesh)
     setCustomVehicleUrl(null);
     setCustomVehicleYtdUrl(null);
     setCustomVehicleFormat('glb');
-    setImportStatusMsg(`✅ تم رسبنة ${chosen.name} (${chosen.spawn}) في مساحة الـ 3D`);
+    const meshLabel = getArchetypeLabelAr(chosen.spawn || chosen.preset, chosen.category);
+    setImportStatusMsg(
+      `✅ ${chosen.name} (${chosen.spawn}) — المعاينة 3D: ${meshLabel}. الصورة المصغّرة من قراند؛ المجسم تقريب لنفس الفئة. ارفع YFT/ZIP لنفس السيارة بالضبط.`
+    );
     setIsImporting(false);
     setImportProgress(100);
     setImportStage(4);
@@ -1453,9 +1456,9 @@ export default function FiveForgeSuite({ className = "" }) {
                         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[10px] text-emerald-100/90 leading-relaxed">
                           <div className="font-bold text-emerald-300 mb-1">مسار سريع (3 خطوات):</div>
                           <ol className="list-decimal pr-4 space-y-0.5 text-neutral-300">
-                            <li>اختر سيارة من «سيارات قراند الأصلية» (أو ارفع ZIP)</li>
-                            <li>افتح صفحة بلندر 3D وعدّل الونان / الشعار / اللون</li>
-                            <li>صدّر ZIP للفايف إم — الإعدادات تُحفظ تلقائياً لو أعدت تحميل الصفحة</li>
+                            <li>اختر سيارة — الصورة من قراند؛ الفيو 3D مجسم مقارب لنفس الفئة (مكتوب على البطاقة)</li>
+                            <li>افتح بلندر 3D وعدّل الونان / الشعار / اللون — أو ارفع YFT/ZIP لنفس السيارة بالضبط</li>
+                            <li>صدّر ZIP للفايف إم — إعداداتك تُحفظ تلقائياً</li>
                           </ol>
                         </div>
                         {draftNotice && (
@@ -2424,7 +2427,7 @@ export default function FiveForgeSuite({ className = "" }) {
                             <option value="police3">🚓 Vapid Police Cruiser (دورية شرطة سيدان 4 أبواب)</option>
                             <option value="schafter3">🚘 Benefactor Schafter V12 (سيدان فاخرة 4 أبواب)</option>
                             <option value="g63">🚙 Mercedes-AMG G63 / Dubsta 4x4 (جيب دفع رباعي SUV)</option>
-                            <option value="kuruma2">🛡️ Karin Armored Kuruma / G63 (مصفحة تكتيكية)</option>
+                            <option value="kuruma2">🛡️ Karin Armored Kuruma (معاينة: سيدان 4 أبواب)</option>
                             <option value="buffalo4">💥 Bravado Buffalo STX (عضلات أمريكية Widebody)</option>
                           </select>
                         </div>
