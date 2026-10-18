@@ -211,6 +211,10 @@ export default function BlenderCarViewportPage({
     setSirenRotX?.(0);
     setSirenRotY?.(0);
     setSirenRotZ?.(0);
+    if (sirenType && sirenType !== 'none') {
+      setGizmoTarget('siren');
+      setGizmoMode('translate');
+    }
     setGizmoKey((k) => k + 1);
   }, [sirenType]);
 
@@ -342,14 +346,14 @@ export default function BlenderCarViewportPage({
             }}
             className="bg-[#1e1e1e] border border-[#3d3d3d] rounded px-2 py-1 text-[11px] text-amber-300 font-bold cursor-pointer"
           >
-            <option value="00barch">🏎️ 2001 Ferrari 550 Barchetta Pininfarina (YFT+YTD الأصلي)</option>
-            <option value="g63">🚙 Mercedes-AMG G63 4x4 (SUV)</option>
-            <option value="revolter">🔥 BMW M4 Competition G82 (Sports)</option>
-            <option value="zentorno">⚡ Lamborghini Aventador V12 (Hypercar)</option>
-            <option value="turismor">🏁 Ferrari 458 Spider (Supercar)</option>
-            <option value="sultanrs">🏎️ Karin Sultan RS / E30 M3 (Tuner)</option>
-            <option value="police3">🚓 Vapid Police Interceptor (Cruiser)</option>
-            <option value="schafter3">🚘 Benefactor Schafter V12 (Sedan)</option>
+            <option value="police3">🚓 سيارة شرطة (Police Interceptor) — للتجربة</option>
+            <option value="g63">🚙 Mercedes-AMG G63 (SUV)</option>
+            <option value="revolter">🔥 BMW M4 Competition</option>
+            <option value="zentorno">⚡ Lamborghini Aventador</option>
+            <option value="turismor">🏁 Ferrari 458 Spider</option>
+            <option value="sultanrs">🏎️ Karin Sultan RS</option>
+            <option value="schafter3">🚘 Benefactor Schafter</option>
+            <option value="00barch">🏎️ Ferrari 550 (YFT من الرابط)</option>
           </select>
         </div>
 
@@ -899,18 +903,44 @@ export default function BlenderCarViewportPage({
                       <p className="text-[9px] text-sky-300 px-0.5">🔊 حزمة صوت مفعّلة للتصدير: {sirenAudioPack}</p>
                     )}
 
+                    <p className="text-[9px] text-neutral-400 leading-relaxed bg-[#141414] border border-[#333] rounded-lg px-2 py-1.5">
+                      اختر نوع الونان → يتركب على مكانه تلقائي. لو الاتجاه غلط اضغط <span className="text-amber-300">قلب Y</span>. حرّك بالماوس والجيزمو يحفظ المكان.
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'lightbar_led', label: 'سقف', tip: 'ونان سقف' },
+                        { id: 'soundoff_ion', label: 'صدام', tip: 'فلاشات أمام' },
+                        { id: 'visor_unmarked', label: 'شماسية', tip: 'داخل الزجاج' }
+                      ].map((q) => (
+                        <button
+                          key={q.id}
+                          type="button"
+                          title={q.tip}
+                          onClick={() => setSirenType(q.id)}
+                          className={`py-2 rounded-lg text-[11px] font-black border cursor-pointer ${
+                            sirenType === q.id
+                              ? 'bg-amber-500 text-black border-amber-300'
+                              : 'bg-[#2b2b2b] text-neutral-200 border-[#3d3d3d] hover:bg-[#353535]'
+                          }`}
+                        >
+                          {q.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="space-y-1.5">
                       {[
-                        { id: 'hideaway_vertex', label: '🚨 فلاشات شمعات وأنوار مخفية (Whelen Vertex Hide-A-Way)', badge: 'LCPDFR' },
-                        { id: 'visor_unmarked', label: '🕵️ شريط تظليل داخلي كامل (Axixtech / Inner Edge)', badge: 'مباحث' },
-                        { id: 'soundoff_ion', label: '🚨 SoundOff Ion + حامل لوحة أمامية', badge: 'شبك' },
-                        { id: 'lightbar_led', label: '🚓 ونان سقف شرطة فائق الواقعية (Generic / Liberty)', badge: 'سقف' },
-                        { id: 'valor_vshape', label: '🚔 ونان سقف V-Shape احترافي (Federal Signal Valor)', badge: 'سقف' },
-                        { id: 'viper_s2', label: '🚨 فلاشر طبلون فردي/مزدوج (Federal Signal Viper S2)', badge: 'طبلون' },
-                        { id: 'roof_single_beacon', label: '🚨 ونان مغناطيسي فردي على السقف (Whelen L31)', badge: 'VIP' },
-                        { id: 'beacon_classic', label: '🚔 ونان كشافات دائرية كلاسيك (Aerodynic)', badge: 'كلاسيك' },
-                        { id: 'custom_obj', label: '📦 بروبة مرفوعة من ملفك (Custom LCPDFR Prop)', badge: 'مخصص' },
-                        { id: 'none', label: '❌ بدون ونان (سيارة مدنية بالكامل)', badge: 'مدنية' }
+                        { id: 'lightbar_led', label: '🚓 ونان سقف Liberty', badge: 'سقف' },
+                        { id: 'valor_vshape', label: '🚔 ونان سقف Valor V-Shape', badge: 'سقف' },
+                        { id: 'soundoff_ion', label: '🚨 SoundOff Ion + لوحة', badge: 'شبك' },
+                        { id: 'visor_unmarked', label: '🕵️ شماسية Inner Edge', badge: 'مباحث' },
+                        { id: 'hideaway_vertex', label: '🚨 فلاشات مخفية Hide-A-Way', badge: 'مخفي' },
+                        { id: 'viper_s2', label: '🚨 فلاشر طبلون Viper S2', badge: 'طبلون' },
+                        { id: 'roof_single_beacon', label: '🚨 منارة سقف L31', badge: 'VIP' },
+                        { id: 'beacon_classic', label: '🚔 كشافات كلاسيك', badge: 'كلاسيك' },
+                        { id: 'custom_obj', label: '📦 بروب من ملفك ZIP/OBJ/YFT', badge: 'مخصص' },
+                        { id: 'none', label: '❌ بدون ونان (مدنية)', badge: 'مدنية' }
                       ].map((sOpt) => (
                         <button
                           key={sOpt.id}
@@ -1186,10 +1216,13 @@ export default function BlenderCarViewportPage({
                     <span className="font-bold text-amber-300 text-[11px] block">
                       🛡️ اختيار أو إزالة شعار السيارة (3D Emblems):
                     </span>
+                    <p className="text-[9px] text-neutral-400 leading-relaxed">
+                      اضغط <span className="text-amber-300">إزالة الشعارات</span> عشان تختفي نجوم/حروف الوكالة من الشبك والشنطة. لو السيارة من رابط YFT، أعد الاستيراد مرة بعد التحديث.
+                    </p>
                     <div className="space-y-1.5">
                       {[
                         { id: 'original', label: '🛡️ شعار الوكالة الأصلي (Factory)' },
-                        { id: 'debadged', label: '✨ إزالة الشعارات + سمكرة (Debadge & Flush)' },
+                        { id: 'debadged', label: '✨ إزالة الشعارات + سمكرة كاملة' },
                         { id: 'gold_crown', label: '👑 شعار ملكي ذهبي عيار 24K' },
                         { id: 'carbon_sport', label: '🏁 شعار كاربون رياضي M-Power / AMG' },
                         { id: 'lspd_star', label: '⭐ نجمة الشرطة وأمن الطرق + الأبواب' },

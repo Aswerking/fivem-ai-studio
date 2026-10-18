@@ -1316,15 +1316,19 @@ export default function RealisticGtaVehicle({
     (baseRot[1] || 0) + (sirenRotY || 0),
     (baseRot[2] || 0) + (sirenRotZ || 0)
   ];
-  // Default facing: modules look OUT from the car (GTA front = -Z). Flip Y 180° unless already outward.
-  let sirenFaceFix = [0, Math.PI, 0];
-  if (effectiveSirenType === 'viper_s2') {
-    sirenFaceFix = [-0.15, Math.PI, 0];
-  } else if (effectiveSirenType === 'visor_unmarked') {
-    sirenFaceFix = [0.15, Math.PI, 0];
-  } else if (effectiveSirenType === 'soundoff_ion') {
-    sirenFaceFix = [0.05, Math.PI, 0];
+  // Roof bars sit upright; front/visor props face OUT (-Z = GTA front) via Y=180°
+  let sirenFaceFix = [0, 0, 0];
+  if (
+    effectiveSirenType === 'soundoff_ion' ||
+    effectiveSirenType === 'visor_unmarked' ||
+    effectiveSirenType === 'viper_s2' ||
+    effectiveSirenType === 'custom_obj' ||
+    effectiveSirenType === 'beacon_classic'
+  ) {
+    sirenFaceFix = [0, Math.PI, 0];
   }
+  if (effectiveSirenType === 'viper_s2') sirenFaceFix = [-0.12, Math.PI, 0];
+  if (effectiveSirenType === 'visor_unmarked') sirenFaceFix = [0.12, Math.PI, 0];
 
   // Determine whether front badge sits on the sloped hood nose (BMW/Lambo/Ferrari/Sedan) or vertical grille (G63 SUV)
   const useGrilleForFront =
@@ -1800,12 +1804,12 @@ export default function RealisticGtaVehicle({
                   map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
                   color={sirenColors.left}
                   emissive={sirenColors.left}
-                  emissiveIntensity={strobeState ? 2.38 : 0.30}
+                  emissiveIntensity={strobeState ? 1.55 : 0.22}
                   roughness={0.1}
                 />
               </mesh>
               {strobeState && (
-                <pointLight position={[-dims.width * 0.24, 0.2, 0]} intensity={0.55} distance={1.60} color={sirenColors.left} />
+                <pointLight position={[-dims.width * 0.24, 0.08, -0.04]} intensity={0.4} distance={1.35} color={sirenColors.left} />
               )}
 
               {/* Internal Right Red/Blue Multi-Module Pack */}
@@ -1815,22 +1819,22 @@ export default function RealisticGtaVehicle({
                   map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
                   color={sirenColors.right}
                   emissive={sirenColors.right}
-                  emissiveIntensity={!strobeState ? 2.38 : 0.30}
+                  emissiveIntensity={!strobeState ? 1.55 : 0.22}
                   roughness={0.1}
                 />
               </mesh>
               {!strobeState && (
-                <pointLight position={[dims.width * 0.24, 0.2, 0]} intensity={0.55} distance={1.60} color={sirenColors.right} />
+                <pointLight position={[dims.width * 0.24, 0.08, -0.04]} intensity={0.4} distance={1.35} color={sirenColors.right} />
               )}
 
-              {/* Dual Center High-Power White LED Takedowns */}
-              <mesh position={[-0.042, 0.012, -0.058]}>
+              {/* Dual Center White LED Takedowns — face car front (-Z) */}
+              <mesh position={[-0.042, 0.012, -0.062]}>
                 <boxGeometry args={[0.034, 0.018, 0.016]} />
-                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={1.4} />
+                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={0.9} />
               </mesh>
-              <mesh position={[0.042, 0.012, -0.058]}>
+              <mesh position={[0.042, 0.012, -0.062]}>
                 <boxGeometry args={[0.034, 0.018, 0.016]} />
-                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={1.4} />
+                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={0.9} />
               </mesh>
 
               {/* Side Alley Lights */}
