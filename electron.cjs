@@ -151,16 +151,21 @@ function createWindow() {
 
   // تحميل واستخراج السيارة الحقيقية (.yft + .ytd + .meta) مباشرة من gta5-mods.com
   ipcMain.handle('fetch-gta5mods-car', async (event, urlOrQuery) => {
-    const { fetchAndExtractGta5ModsCar } = require('./server/gta5ModsExtractor.cjs');
-    const result = await fetchAndExtractGta5ModsCar(urlOrQuery);
-    const yftBuf = fs.readFileSync(result.yftPath);
-    const ytdBuf = result.ytdPath && fs.existsSync(result.ytdPath) ? fs.readFileSync(result.ytdPath) : null;
-    return {
-      ok: true,
-      ...result,
-      yftBytes: new Uint8Array(yftBuf),
-      ytdBytes: ytdBuf ? new Uint8Array(ytdBuf) : null
-    };
+    try {
+      const { fetchAndExtractGta5ModsCar } = require('./server/gta5ModsExtractor.cjs');
+      const result = await fetchAndExtractGta5ModsCar(urlOrQuery);
+      const yftBuf = fs.readFileSync(result.yftPath);
+      const ytdBuf = result.ytdPath && fs.existsSync(result.ytdPath) ? fs.readFileSync(result.ytdPath) : null;
+      return {
+        ok: true,
+        ...result,
+        yftBytes: new Uint8Array(yftBuf),
+        ytdBytes: ytdBuf ? new Uint8Array(ytdBuf) : null
+      };
+    } catch (err) {
+      console.warn('[IPC fetch-gta5mods-car error]', err);
+      return { ok: false, error: err?.message || String(err) };
+    }
   });
 }
 

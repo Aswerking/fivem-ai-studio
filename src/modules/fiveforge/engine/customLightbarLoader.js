@@ -123,7 +123,8 @@ async function loadFromArchive(fileName, arrayBuffer) {
       scene: await loadObjText(text),
       format: 'obj',
       sourceName: best.name,
-      files: names
+      files: names,
+      bestBytes: best.entry.data
     };
   }
 
@@ -133,7 +134,8 @@ async function loadFromArchive(fileName, arrayBuffer) {
       format: 'ydr',
       sourceName: best.name,
       files: names,
-      ydrBytes: best.entry.data
+      ydrBytes: best.entry.data,
+      bestBytes: best.entry.data
     };
   }
 
@@ -143,7 +145,8 @@ async function loadFromArchive(fileName, arrayBuffer) {
       format: 'yft',
       sourceName: best.name,
       files: names,
-      yftBytes: best.entry.data
+      yftBytes: best.entry.data,
+      bestBytes: best.entry.data
     };
   }
 
@@ -152,7 +155,8 @@ async function loadFromArchive(fileName, arrayBuffer) {
       scene: await loadZ3dBytes(best.entry.data),
       format: 'z3d',
       sourceName: best.name,
-      files: names
+      files: names,
+      bestBytes: best.entry.data
     };
   }
 
@@ -172,40 +176,47 @@ export async function loadCustomLightbarFile(file) {
     const text = await file.text();
     const scene = await loadObjText(text);
     const objectUrl = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-    return { objectUrl, format: 'obj', sourceName: name, scene };
+    return { objectUrl, format: 'obj', sourceName: name, scene, bestBytes: new TextEncoder().encode(text) };
   }
 
   if (lower.endsWith('.ydr')) {
     const buf = new Uint8Array(await file.arrayBuffer());
     const scene = await loadYdrBytes(buf);
     const objectUrl = URL.createObjectURL(file);
-    return { objectUrl, format: 'ydr', sourceName: name, scene, ydrBytes: buf };
+    return { objectUrl, format: 'ydr', sourceName: name, scene, ydrBytes: buf, bestBytes: buf };
   }
 
   if (lower.endsWith('.yft')) {
     const buf = new Uint8Array(await file.arrayBuffer());
     const scene = await loadYftBytes(buf);
     const objectUrl = URL.createObjectURL(file);
-    return { objectUrl, format: 'yft', sourceName: name, scene, yftBytes: buf };
+    return { objectUrl, format: 'yft', sourceName: name, scene, yftBytes: buf, bestBytes: buf };
   }
 
   if (lower.endsWith('.z3d')) {
     const buf = new Uint8Array(await file.arrayBuffer());
     const scene = await loadZ3dBytes(buf);
-    return { objectUrl: null, format: 'z3d', sourceName: name, scene };
+    const objectUrl = URL.createObjectURL(file);
+    return { objectUrl, format: 'z3d', sourceName: name, scene, bestBytes: buf };
   }
 
   if (lower.endsWith('.zip') || lower.endsWith('.rar')) {
     const ab = await file.arrayBuffer();
     const loaded = await loadFromArchive(name, ab);
+    let objectUrl = null;
+    if (loaded.bestBytes) {
+      const mime = loaded.format === 'obj' ? 'text/plain' : 'application/octet-stream';
+      objectUrl = URL.createObjectURL(new Blob([loaded.bestBytes], { type: mime }));
+    }
     return {
-      objectUrl: null,
+      objectUrl,
       format: loaded.format,
       sourceName: loaded.sourceName || name,
       scene: loaded.scene,
       yftBytes: loaded.yftBytes,
       ydrBytes: loaded.ydrBytes,
-      files: loaded.files
+      files: loaded.files,
+      bestBytes: loaded.bestBytes
     };
   }
 

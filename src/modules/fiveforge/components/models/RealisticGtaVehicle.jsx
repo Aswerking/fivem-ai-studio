@@ -27,7 +27,7 @@ export const VEHICLE_GLB_MAP = {
   sedan: assetUrl('models/raw_4door_sedan.glb'), // 2023 4-Door Executive Sedan
   police: assetUrl('models/raw_4door_sedan.glb'), // 4-Door Police Cruiser Interceptor
   suv: assetUrl('models/raw_g63_suv.glb'), // Mercedes-AMG G63 4x4 SUV
-  armored: assetUrl('models/raw_g63_suv.glb') // Tactical armored SUV (NOT Kuruma — Kuruma is sedan)
+  armored: assetUrl('models/raw_4door_sedan.glb') // Armored Sedan (Karin Kuruma / Armored 4-Door Sedan)
 };
 
 /** Human-readable Arabic labels for the stand-in mesh the user actually sees */
@@ -40,7 +40,7 @@ export const ARCHETYPE_LABELS_AR = {
   sedan: 'سيدان 4 أبواب',
   police: 'دورية سيدان 4 أبواب',
   suv: 'مرسيدس G63 (دفع رباعي)',
-  armored: 'مرسيدس G63 مصفح (تكتيكي)'
+  armored: 'سيدان مصفحة 4 أبواب (كورونا مصفحة)'
 };
 
 /**
@@ -622,12 +622,16 @@ function classifyByKeyword(str = '') {
   if (/police|cop|sheriff|fbi|pranger|riot|lguard|ambulance|intercept|lspd|patrol|emergency|طوارئ|شرطة/.test(s)) {
     return 'police';
   }
-  // 2. Armored sedan first (Kuruma family = 4-door, never G63 SUV)
-  if (/^kuruma2?$|kuruma/.test(s)) {
+  // 2. Kuruma family & Armored Sedans (Mitsubishi Lancer Evo / 4-Door Armored Sedan - NEVER SUV)
+  if (/kuruma|kuruma2|cog552|schafter5|schafter6|armored_sedan/.test(s)) {
     return 'sedan';
   }
-  // 3. Armored / Military / Tactical 4x4 (G63 mesh stand-in)
-  if (/armored|insurgent|nightshark|menacer|barrage|apc|rhino|khanjali|halftrack|scarab|zhaba|squaddie|مصفحة|عسكرية/.test(s)) {
+  // 3. Military / Tactical Armored 4x4 / Trucks (G63 Armored Stand-in)
+  if (/insurgent|nightshark|menacer|barrage|apc|rhino|khanjali|halftrack|scarab|zhaba|squaddie|عسكرية/.test(s)) {
+    return 'suv';
+  }
+  // 4. General Armored keyword -> sedan default (matches Kuruma armored sedan)
+  if (/armored|مصفحة/.test(s)) {
     return 'armored';
   }
   // 4. SUVs / Off-Road / Pickups / Trucks / Vans (Mercedes-AMG G63 4x4)
@@ -2261,7 +2265,7 @@ export default function RealisticGtaVehicle({
           )}
 
           {/* STYLE: CUSTOM UPLOADED LCPDFR PROP (.OBJ / .YFT / .ZIP) */}
-          {effectiveSirenType === 'custom_obj' && customLightbarObj && (
+          {(effectiveSirenType === 'custom_obj' || (customLightbarObj && effectiveSirenType !== 'none')) && customLightbarObj && (
             <group
               name="lcpdfr_custom_uploaded_prop"
               position={sirenOuterPos(lightbarBase)}

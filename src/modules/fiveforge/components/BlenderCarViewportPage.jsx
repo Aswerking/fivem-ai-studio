@@ -297,9 +297,10 @@ export default function BlenderCarViewportPage({
         ...(loaded.files || [])
       ]);
       // Prefer real uploaded mesh in viewport; fall back to matching built-in style
-      setSirenType(loaded.scene ? 'custom_obj' : guessed);
+      const hasRealMesh = !!(loaded.scene || loaded.objectUrl || loaded.ydrBytes || loaded.yftBytes || loaded.bestBytes);
+      setSirenType(hasRealMesh ? 'custom_obj' : guessed);
       setGizmoTarget('siren');
-      setLcpdfrStatus(`✅ تم تركيب البروب: ${loaded.sourceName || file.name} — حرّكه بالأسهم 3D`);
+      setLcpdfrStatus(`✅ تم تركيب القطعة الأصلية: ${loaded.sourceName || file.name} — حرّكها بالأسهم 3D`);
     } catch (err) {
       setLcpdfrStatus(`❌ ${err.message || String(err)}`);
     } finally {

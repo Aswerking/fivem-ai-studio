@@ -186,18 +186,19 @@ export default function FiveForgeSuite({ className = "" }) {
     {
       name: 'Karin Armored Kuruma',
       spawn: 'kuruma2',
-      category: 'Armored',
+      preset: 'sedan',
+      category: 'Sports',
       audio: 'sultanrs',
-      speed: 225,
-      accel: 1.35,
+      speed: 250,
+      accel: 1.5,
       brake: 1.3,
       drivetrain: 'AWD',
-      mass: 1980,
+      mass: 1680,
       color: '#334155',
-      badge: 'مصفحة مضادة للرصاص',
+      badge: 'مصفحة سيدان AWD',
       rim: 'satin_black',
-      classAr: 'مصفحة وتكتيكية',
-      desc: 'السيارة المصفحة الأكثر تحصيناً بصفائح فولاذية للنوافذ ودعامة صدم أمامية'
+      classAr: 'سيدان ومصفحة',
+      desc: 'سيدان يابانية مصفحة مضادة للرصاص مع صفائح فولاذية للنوافذ ودفع كلي AWD'
     },
     {
       name: 'Vapid Police Cruiser Interceptor',
@@ -383,7 +384,7 @@ export default function FiveForgeSuite({ className = "" }) {
       new RegExp(`(?:^|[^a-z0-9])${c.spawn}(?:$|[^a-z0-9])`, 'i').test(slug) ||
       (c.spawn === '00barch' && /550|barchetta|pininfarina|00barch/.test(slug)) ||
       (c.spawn === 'police3' && /police|cop|sheriff|interceptor|lspd|fbi|patrol/.test(slug)) ||
-      (c.spawn === 'dubsta3' && /g63|gwagon|brabus|dubsta|baller|tahoe|suburban|escalade|jeep|wrangler|landcruiser|prado|hilux|raptor|trx|hummer|suv|4x4/.test(slug)) ||
+      (c.spawn === 'dubsta3' && /g63|gwagon|brabus|dubsta|baller|tahoe|suburban|escalade|jeep|wrangler|landcruiser|prado|hilux|raptor|trx|hummer|suv|4x4|insurgent|nightshark|menacer/.test(slug)) ||
       (c.spawn === 'zentorno' && /lambo|aventador|huracan|revuelto|veneno|countach|zentorno|torero|chiron|bugatti/.test(slug)) ||
       (c.spawn === 'turismor' && /ferrari|458|488|f8|turismo/.test(slug) && !/550|barchetta/.test(slug)) ||
       (c.spawn === 't20' && /mclaren|t20|p1|senna|720s/.test(slug)) ||
@@ -392,7 +393,7 @@ export default function FiveForgeSuite({ className = "" }) {
       (c.spawn === 'elegy2' && /skyline|gtr|elegy|r32|r34|r35|nissan|rx7|mazda|e30/.test(slug)) ||
       (c.spawn === 'sultanrs' && /sultan|subaru|\bevo\b|mitsubishi/.test(slug)) ||
       (c.spawn === 'jester4' && /supra|jester|toyota/.test(slug)) ||
-      (c.spawn === 'kuruma2' && /kuruma|armored|insurgent|nightshark/.test(slug)) ||
+      (c.spawn === 'kuruma2' && /kuruma/.test(slug)) ||
       (c.spawn === 'drafter' && /audi|rs6|rs7|drafter/.test(slug)) ||
       (c.spawn === 'schafter3' && /schafter|s500|e63|c63|camry|accord|sonata|lexus|crown|caprice|sedan/.test(slug)) ||
       (c.spawn === 'gauntlet4' && /gauntlet|challenger/.test(slug)) ||
@@ -690,10 +691,25 @@ export default function FiveForgeSuite({ className = "" }) {
         }
       }
 
-      if (data && data.ok && data.yftUrl) {
-        setCustomVehicleUrl(data.yftUrl);
+      let finalYftUrl = data?.yftUrl || null;
+      let finalYtdUrl = data?.ytdUrl || null;
+
+      // Handle binary bytes from Electron IPC handler
+      if (data && data.ok) {
+        if (!finalYftUrl && data.yftBytes) {
+          const yftBlob = new Blob([data.yftBytes], { type: 'application/octet-stream' });
+          finalYftUrl = URL.createObjectURL(yftBlob);
+        }
+        if (!finalYtdUrl && data.ytdBytes) {
+          const ytdBlob = new Blob([data.ytdBytes], { type: 'application/octet-stream' });
+          finalYtdUrl = URL.createObjectURL(ytdBlob);
+        }
+      }
+
+      if (data && data.ok && finalYftUrl) {
+        setCustomVehicleUrl(finalYftUrl);
         setCustomVehicleFormat('yft');
-        setCustomVehicleYtdUrl(data.ytdUrl || null);
+        setCustomVehicleYtdUrl(finalYtdUrl || null);
 
         const cleanTitle = (data.title || '')
           .replace(/\[.*?\]/g, '')
@@ -714,7 +730,7 @@ export default function FiveForgeSuite({ className = "" }) {
         } else if (/amg|mercedes|gt\s*r/i.test(cleanTitle)) {
           setCarColor('#16a34a');
         }
-        setImportStatusMsg(`✅ تم استيراد المجسم الأصلي (${data.yftName}) + التكستشرات (${data.ytdName || 'YTD'}) بنجاح!`);
+        setImportStatusMsg(`✅ تم استيراد المجسم الأصلي (${data.yftName || 'YFT'}) + التكستشرات (${data.ytdName || 'YTD'}) بنجاح!`);
         setImportProgress(100);
         setImportStage(4);
         setIsImporting(false);
