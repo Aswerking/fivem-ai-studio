@@ -12,15 +12,14 @@ const STORAGE_KEYS = {
   CREDITS: 'fiveforge_user_credits',
   HISTORY: 'fiveforge_export_history',
   USER: 'fiveforge_user_profile',
-  CAR_DRAFT: 'fiveforge_car_studio_draft_v1'
+  // sessionStorage = per-tab only. localStorage was syncing two browser windows live.
+  CAR_DRAFT: 'fiveforge_car_studio_draft_v2',
+  CAR_DRAFT_LEGACY: 'fiveforge_car_studio_draft_v1'
 };
 
-/** Load last car-studio settings so refresh / accidental close doesn't wipe work. */
-export function loadCarStudioDraft() {
+function parseDraft(raw) {
+  if (!raw) return null;
   try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(STORAGE_KEYS.CAR_DRAFT);
-    if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : null;
   } catch {
@@ -28,14 +27,53 @@ export function loadCarStudioDraft() {
   }
 }
 
-/** Persist serializable car-studio fields only (never blob: URLs). */
+/**
+ * Load car-studio draft for THIS browser tab only (sessionStorage).
+ * Migrates legacy localStorage draft once, then deletes it so other tabs stop sharing.
+ */
+export function loadCarStudioDraft() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const fromSession = parseDraft(sessionStorage.getItem(STORAGE_KEYS.CAR_DRAFT));
+      if (fromSession) return fromSession;
+    }
+    // One-time migrate from old shared localStorage key
+    if (typeof localStorage !== 'undefined') {
+      const legacy = parseDraft(localStorage.getItem(STORAGE_KEYS.CAR_DRAFT_LEGACY));
+      if (legacy) {
+        try {
+          sessionStorage?.setItem(STORAGE_KEYS.CAR_DRAFT, JSON.stringify(legacy));
+        } catch {
+          /* ignore */
+        }
+        try {
+          localStorage.removeItem(STORAGE_KEYS.CAR_DRAFT_LEGACY);
+        } catch {
+          /* ignore */
+        }
+        return legacy;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist serializable car-studio fields for this tab only (never blob: URLs). */
 export function saveCarStudioDraft(draft) {
   try {
-    if (typeof localStorage === 'undefined' || !draft) return;
-    localStorage.setItem(
+    if (typeof sessionStorage === 'undefined' || !draft) return;
+    sessionStorage.setItem(
       STORAGE_KEYS.CAR_DRAFT,
       JSON.stringify({ ...draft, savedAt: Date.now() })
     );
+    // Kill legacy shared key so a second window can't keep overwriting this session
+    try {
+      localStorage?.removeItem(STORAGE_KEYS.CAR_DRAFT_LEGACY);
+    } catch {
+      /* ignore */
+    }
   } catch {
     /* quota / private mode */
   }
@@ -43,8 +81,8 @@ export function saveCarStudioDraft(draft) {
 
 export function clearCarStudioDraft() {
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(STORAGE_KEYS.CAR_DRAFT);
+    sessionStorage?.removeItem(STORAGE_KEYS.CAR_DRAFT);
+    localStorage?.removeItem(STORAGE_KEYS.CAR_DRAFT_LEGACY);
   } catch {
     /* ignore */
   }
