@@ -19,7 +19,7 @@ import RealisticGtaPed from './models/RealisticGtaPed.jsx';
 import RealisticGtaWeapon from './models/RealisticGtaWeapon.jsx';
 import RealisticGtaChain from './models/RealisticGtaChain.jsx';
 import RealisticGtaPlate from './models/RealisticGtaPlate.jsx';
-import { VanillaCarCatalog, RealGta5ModsImporter } from './RealCarTools.jsx';
+import { VanillaCarCatalog, RealGta5ModsImporter, VehicleThumb } from './RealCarTools.jsx';
 import { VANILLA_VEHICLES } from '../engine/vanillaVehicles.js';
 import BlenderCarViewportPage from './BlenderCarViewportPage.jsx';
 
@@ -53,21 +53,21 @@ export default function FiveForgeSuite({ className = "" }) {
   // TOOL 3: ADD-ON CAR IMPORTER STATE & PRESETS
   // ==========================================
   const [importerTab, setImporterTab] = useState('url'); // 'url' | 'file'
-  const [importerUrl, setImporterUrl] = useState('');
+  const [importerUrl, setImporterUrl] = useState('https://www.gta5-mods.com/vehicles/2000-ferrari-550-barchetta-pininfarina-add-on-template');
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(100);
   const [importStage, setImportStage] = useState(4);
   const [importerActiveTab, setImporterActiveTab] = useState('meta'); // 'meta' | 'handling' | 'lighting'
   const [importedCarMeta, setImportedCarMeta] = useState({
-    displayName: 'Vapid Police Interceptor',
-    spawnCode: 'police3',
-    category: 'Emergency',
-    audioHash: 'police3',
-    topSpeed: 180,
-    accelMultiplier: 1.2,
-    brakeForce: 1.2,
+    displayName: '2001 Ferrari 550 Barchetta Pininfarina',
+    spawnCode: '00barch',
+    category: 'Super',
+    audioHash: 'turismor',
+    topSpeed: 305,
+    accelMultiplier: 1.75,
+    brakeForce: 1.4,
     drivetrain: 'RWD',
-    mass: 1800
+    mass: 1690
   });
 
   // ==========================================
@@ -470,14 +470,14 @@ export default function FiveForgeSuite({ className = "" }) {
 
   // Tool Specific Interactive States
   // 1. Vehicle Editor V2, Badge Customizer & Siren/Wanan Studio
-  const [carPreset, setCarPreset] = useState('police3');
+  const [carPreset, setCarPreset] = useState('00barch');
   const [carColor, setCarColor] = useState('#c81414');
   const [debadged, setDebadged] = useState(false);
   const [filledFlush, setFilledFlush] = useState(false);
   const [badgeMode, setBadgeMode] = useState('original');
   const [customBadgeTexture, setCustomBadgeTexture] = useState(null);
   const [badgeScale, setBadgeScale] = useState(1.0);
-  const [sirenType, setSirenType] = useState('lightbar_led');
+  const [sirenType, setSirenType] = useState('auto');
   const [sirenColorMode, setSirenColorMode] = useState('red_blue');
   const [sirenOffsetX, setSirenOffsetX] = useState(0);
   const [sirenOffsetY, setSirenOffsetY] = useState(0);
@@ -790,30 +790,30 @@ export default function FiveForgeSuite({ className = "" }) {
       setCustomVehicleLivery(null);
       const ok = await fetchRealGta5ModsCar(urlToFetch);
       if (!ok) {
+        // Still spawn archetype GLB so viewport is never empty
+        setCustomVehicleUrl(null);
+        setCustomVehicleYtdUrl(null);
+        setCustomVehicleFormat('glb');
         setImportStatusMsg((prev) =>
           prev?.startsWith('❌')
-            ? prev
-            : '❌ ما انسحب الموديل من الرابط — تأكد إن الصفحة فيها Download وأن السيرفر يقدر يوصل لـ gta5-mods'
+            ? `${prev} — تم عرض مجسم 3D بديل مؤقتاً`
+            : '❌ ما انسحب الموديل من الرابط — تم عرض مجسم 3D بديل مؤقتاً'
         );
       }
+      setIsImporting(false);
+      setImportProgress(100);
+      setImportStage(4);
       return;
     }
 
-    setTimeout(() => {
-      setImportProgress(38);
-      setImportStage(2);
-    }, 350);
-
-    setTimeout(() => {
-      setImportProgress(72);
-      setImportStage(3);
-    }, 700);
-
-    setTimeout(() => {
-      setImportProgress(100);
-      setImportStage(4);
-      setIsImporting(false);
-    }, 1050);
+    // Official / catalog picks use built-in GLB archetypes
+    setCustomVehicleUrl(null);
+    setCustomVehicleYtdUrl(null);
+    setCustomVehicleFormat('glb');
+    setImportStatusMsg(`✅ تم رسبنة ${chosen.name} (${chosen.spawn}) في مساحة الـ 3D`);
+    setIsImporting(false);
+    setImportProgress(100);
+    setImportStage(4);
   };
 
   // Handle Export Resource with Credit Logic
@@ -904,12 +904,9 @@ export default function FiveForgeSuite({ className = "" }) {
     setExportNotice(null);
     setUploadedFileName(null);
     if (tool.id === 'car_importer') {
-      setModelNameInput('police3');
-      setCarPreset('police3');
-      setCarColor('#0a0a0f');
-      setSirenType('lightbar_led');
-      setBadgeMode('original');
-      setDebadged(false);
+      setModelNameInput('00barch');
+      setCarPreset('00barch');
+      setCarColor('#c81414');
     }
   };
 
@@ -1409,19 +1406,27 @@ export default function FiveForgeSuite({ className = "" }) {
                                     key={preset.spawn}
                                     type="button"
                                     onClick={() => handleStartImportCar(preset)}
-                                    className={`p-2 rounded-xl border text-right transition flex items-center justify-between cursor-pointer ${
+                                    className={`overflow-hidden rounded-xl border text-right transition cursor-pointer ${
                                       importedCarMeta.spawnCode === preset.spawn
-                                        ? 'bg-amber-500/15 border-amber-500 text-white'
+                                        ? 'bg-amber-500/15 border-amber-500 text-white ring-1 ring-amber-500/40'
                                         : 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700 text-neutral-300'
                                     }`}
                                   >
-                                    <div className="min-w-0">
+                                    <div className="relative h-20 w-full bg-neutral-950">
+                                      <VehicleThumb
+                                        spawn={preset.spawn}
+                                        color={preset.color || '#334155'}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                                      <span className="absolute bottom-1 right-1.5 text-[8px] bg-black/70 text-neutral-200 px-1.5 py-0.5 rounded">
+                                        {preset.badge}
+                                      </span>
+                                    </div>
+                                    <div className="p-2 min-w-0">
                                       <div className="text-[11px] font-bold truncate">{preset.name}</div>
                                       <div className="text-[9px] text-amber-400 font-mono">Spawn: {preset.spawn}</div>
                                     </div>
-                                    <span className="text-[9px] bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400 shrink-0">
-                                      {preset.badge}
-                                    </span>
                                   </button>
                                 ))}
                               </div>
@@ -2056,7 +2061,7 @@ export default function FiveForgeSuite({ className = "" }) {
                                   { id: 'valor_vshape', label: '⚡ ونان سقف V إيروديناميك', desc: 'Federal Signal Valor زوايا مثلثة حديثة' },
                                   { id: 'roof_single_beacon', label: '🚨 ونان مغناطيسي فردي', desc: 'Whelen L31 LED بقاعدة مغناطيسية للمواكب' },
                                   { id: 'beacon_classic', label: '🚔 ونان كلاسيك قبتين دوارة', desc: 'Federal Signal Aerodynic مع سماعة وسطية' },
-                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/RAR/Z3D/OBJ/YFT)', desc: 'ارفع ملف LCPDFR أو ZModeler من صفحة الـ Blender Viewport' }
+                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/OBJ/YFT)', desc: 'ارفع ملف LCPDFR من صفحة الـ Blender Viewport' }
                                 ].map((sItem) => (
                                   <button
                                     key={sItem.id}
