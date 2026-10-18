@@ -71,7 +71,7 @@ export const LCPDFR_LIGHTBAR_CATALOG = [
     mount: 'headlights',
     extrasHint: ['extra_7', 'extra_8', 'extra_9'],
     badge: 'مخفي',
-    descAr: 'فلاشات داخل الشمعات والاسطبات بدون ونان سقف — سيارة مدنية الظاهر.',
+    descAr: 'معاينة استوديو لفلاشات مخفية خلف الشبك. للقطعة الأصلية: حمّل ZIP من LCPDFR وارفعه في الاستوديو.',
     url: 'https://www.lcpdfr.com/downloads/dev-resources/lightbars/?q=Hide-A-Way',
     match: [/hide[-_]?a[-_]?way/i, /hideaway/i, /vertex/i]
   },

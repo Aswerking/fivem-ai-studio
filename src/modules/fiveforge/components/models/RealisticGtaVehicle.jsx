@@ -980,11 +980,11 @@ export default function RealisticGtaVehicle({
     return presetType === 'police' ? 'lightbar_led' : 'none';
   }, [sirenType, presetType]);
 
+  // Pushbar enabled when Setina PB-400 preset is selected OR user explicitly toggles it
   const effectivePushbar = useMemo(() => {
     if (effectiveSirenType === 'setina_pb400_led') return true;
-    if (typeof pushbarEnabled === 'boolean') return pushbarEnabled;
-    return presetType === 'police';
-  }, [pushbarEnabled, presetType, effectiveSirenType]);
+    return pushbarEnabled === true;
+  }, [pushbarEnabled, effectiveSirenType]);
 
   const effectiveBadgeMode = useMemo(() => {
     if (badgeMode && badgeMode !== 'original') return badgeMode;
@@ -1347,15 +1347,19 @@ export default function RealisticGtaVehicle({
     (baseRot[1] || 0) + (sirenRotY || 0),
     (baseRot[2] || 0) + (sirenRotZ || 0)
   ];
-  // Default facing: modules look OUT from the car (GTA front = -Z). Flip Y 180° unless already outward.
-  let sirenFaceFix = [0, Math.PI, 0];
-  if (effectiveSirenType === 'viper_s2') {
-    sirenFaceFix = [-0.15, Math.PI, 0];
-  } else if (effectiveSirenType === 'visor_unmarked') {
-    sirenFaceFix = [0.15, Math.PI, 0];
-  } else if (effectiveSirenType === 'soundoff_ion') {
-    sirenFaceFix = [0.05, Math.PI, 0];
+  // Roof bars sit upright; front/visor props face OUT (-Z = GTA front) via Y=180°
+  let sirenFaceFix = [0, 0, 0];
+  if (
+    effectiveSirenType === 'soundoff_ion' ||
+    effectiveSirenType === 'visor_unmarked' ||
+    effectiveSirenType === 'viper_s2' ||
+    effectiveSirenType === 'custom_obj' ||
+    effectiveSirenType === 'beacon_classic'
+  ) {
+    sirenFaceFix = [0, Math.PI, 0];
   }
+  if (effectiveSirenType === 'viper_s2') sirenFaceFix = [-0.12, Math.PI, 0];
+  if (effectiveSirenType === 'visor_unmarked') sirenFaceFix = [0.12, Math.PI, 0];
 
   // Determine whether front badge sits on the sloped hood nose (BMW/Lambo/Ferrari/Sedan) or vertical grille (G63 SUV)
   const useGrilleForFront =
@@ -1529,133 +1533,57 @@ export default function RealisticGtaVehicle({
           {/* فلاشات مخفية داخل الشمعات الأمامية والأنوار الخلفية والشبك - مظهر مدني 100% */}
           {/* ========================================================================= */}
           {effectiveSirenType === 'hideaway_vertex' && (
-            <group name="lcpdfr_whelen_vertex_hideaway">
-              {/* Left Front Headlight Vertex Strobe Module */}
-              <group position={anchors.headlights.left}>
-                {/* Chrome Reflector Cup */}
-                <mesh position={[0, 0, 0.015]} rotation={[-Math.PI / 2, 0, 0]}>
-                  <cylinderGeometry args={[0.024, 0.014, 0.018, 20]} />
-                  <meshStandardMaterial color="#cbd5e1" metalness={0.95} roughness={0.1} />
-                </mesh>
-                {/* Whelen Vertex Fluted Optic Dome */}
-                <mesh position={[0, 0, 0.02]}>
-                  <sphereGeometry args={[0.018, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
-                    color={strobeState ? sirenColors.left : '#ffffff'}
-                    emissive={strobeState ? sirenColors.left : '#000000'}
-                    emissiveIntensity={strobeState ? 2.27 : 0.00}
-                    roughness={0.05}
-                    metalness={0.1}
-                    transparent
-                    opacity={0.92}
-                  />
-                </mesh>
-                {strobeState && (
-                  <pointLight
-                    position={[0, 0, -0.06]}
-                    intensity={0.45}
-                    distance={1.4}
-                    color={sirenColors.left}
-                  />
-                )}
-              </group>
-
-              {/* Right Front Headlight Vertex Strobe Module */}
-              <group position={anchors.headlights.right}>
-                <mesh position={[0, 0, 0.015]} rotation={[-Math.PI / 2, 0, 0]}>
-                  <cylinderGeometry args={[0.024, 0.014, 0.018, 20]} />
-                  <meshStandardMaterial color="#cbd5e1" metalness={0.95} roughness={0.1} />
-                </mesh>
-                <mesh position={[0, 0, 0.02]}>
-                  <sphereGeometry args={[0.018, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
-                    color={!strobeState ? sirenColors.right : '#ffffff'}
-                    emissive={!strobeState ? sirenColors.right : '#000000'}
-                    emissiveIntensity={!strobeState ? 1.6 : 0.00}
-                    roughness={0.05}
-                    metalness={0.1}
-                    transparent
-                    opacity={0.92}
-                  />
-                </mesh>
-                {!strobeState && (
-                  <pointLight
-                    position={[0, 0, -0.06]}
-                    intensity={0.45}
-                    distance={1.4}
-                    color={sirenColors.right}
-                  />
-                )}
-              </group>
-
-              {/* Front Grille Whelen ION Surface Mounts */}
-              <group position={[grilleLive[0] - dims.width * 0.15, grilleLive[1], grilleLive[2]]}>
-                <mesh>
-                  <boxGeometry args={[0.052, 0.018, 0.012]} />
-                  <meshStandardMaterial color="#09090b" roughness={0.7} metalness={0.3} />
-                </mesh>
-                <mesh position={[0, 0, -0.005]}>
-                  <planeGeometry args={[0.046, 0.014]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
-                    color={sirenColors.left}
-                    emissive={sirenColors.left}
-                    emissiveIntensity={strobeState ? 2.03 : 0.25}
-                  />
-                </mesh>
-              </group>
-              <group position={[grilleLive[0] + dims.width * 0.15, grilleLive[1], grilleLive[2]]}>
-                <mesh>
-                  <boxGeometry args={[0.052, 0.018, 0.012]} />
-                  <meshStandardMaterial color="#09090b" roughness={0.7} metalness={0.3} />
-                </mesh>
-                <mesh position={[0, 0, -0.005]}>
-                  <planeGeometry args={[0.046, 0.014]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
-                    color={sirenColors.right}
-                    emissive={sirenColors.right}
-                    emissiveIntensity={!strobeState ? 2.03 : 0.25}
-                  />
-                </mesh>
-              </group>
-
-              {/* Left Rear Taillight/Reverse Hideaway Strobe */}
-              <group position={anchors.taillights.left}>
-                <mesh position={[0, 0, 0]}>
-                  <sphereGeometry args={[0.016, 14, 14]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
-                    color={!strobeState ? sirenColors.right : '#ffffff'}
-                    emissive={!strobeState ? sirenColors.right : '#000000'}
-                    emissiveIntensity={!strobeState ? 1.92 : 0.00}
-                    transparent
-                    opacity={0.88}
-                  />
-                </mesh>
-                {!strobeState && (
-                  <pointLight position={[0, 0, 0.06]} intensity={0.55} distance={1.60} color={sirenColors.right} />
-                )}
-              </group>
-
-              {/* Right Rear Taillight/Reverse Hideaway Strobe */}
-              <group position={anchors.taillights.right}>
-                <mesh position={[0, 0, 0]}>
-                  <sphereGeometry args={[0.016, 14, 14]} />
-                  <meshStandardMaterial
-                    map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
-                    color={strobeState ? sirenColors.left : '#ffffff'}
-                    emissive={strobeState ? sirenColors.left : '#000000'}
-                    emissiveIntensity={strobeState ? 1.92 : 0.00}
-                    transparent
-                    opacity={0.88}
-                  />
-                </mesh>
-                {strobeState && (
-                  <pointLight position={[0, 0, 0.06]} intensity={0.55} distance={1.60} color={sirenColors.left} />
-                )}
+            <group
+              name="lcpdfr_whelen_vertex_hideaway"
+              position={sirenOuterPos(bumperLive)}
+              rotation={sirenOuterRot([0.05, Math.PI, 0])}
+              scale={[sirenScale, sirenScale, sirenScale]}
+            >
+              <group ref={sirenGroupRef}>
+              {/* 4 Hide-A-Way grille pods (studio preview — real mesh = upload ZIP from LCPDFR) */}
+              {[
+                { x: -0.28, color: '#f8fafc', lit: strobeState },
+                { x: -0.1, color: sirenColors.right, lit: !strobeState },
+                { x: 0.1, color: sirenColors.left, lit: strobeState },
+                { x: 0.28, color: '#f59e0b', lit: !strobeState }
+              ].map((pod, i) => (
+                <group key={`hideaway_pod_${i}`} position={[pod.x, 0.02, 0.01]}>
+                  <mesh castShadow>
+                    <boxGeometry args={[0.07, 0.032, 0.045]} />
+                    <meshStandardMaterial color="#0b1220" metalness={0.85} roughness={0.28} />
+                  </mesh>
+                  <mesh position={[0, 0, 0.024]}>
+                    <boxGeometry args={[0.058, 0.022, 0.01]} />
+                    <meshStandardMaterial
+                      map={getProceduralFresnelOpticTexture(pod.lit, pod.color)}
+                      color={pod.color}
+                      emissive={pod.color}
+                      emissiveIntensity={pod.lit ? 1.85 : 0.28}
+                      roughness={0.12}
+                    />
+                  </mesh>
+                  {pod.lit && (
+                    <pointLight position={[0, 0, 0.06]} intensity={0.35} distance={1.1} color={pod.color} />
+                  )}
+                </group>
+              ))}
+              {/* Subtle headlight corner dots */}
+              <mesh position={[-dims.width * 0.32, 0.08, -0.02]}>
+                <sphereGeometry args={[0.012, 12, 12]} />
+                <meshStandardMaterial
+                  color={sirenColors.left}
+                  emissive={sirenColors.left}
+                  emissiveIntensity={strobeState ? 1.4 : 0.15}
+                />
+              </mesh>
+              <mesh position={[dims.width * 0.32, 0.08, -0.02]}>
+                <sphereGeometry args={[0.012, 12, 12]} />
+                <meshStandardMaterial
+                  color={sirenColors.right}
+                  emissive={sirenColors.right}
+                  emissiveIntensity={!strobeState ? 1.4 : 0.15}
+                />
+              </mesh>
               </group>
             </group>
           )}
@@ -1831,12 +1759,12 @@ export default function RealisticGtaVehicle({
                   map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
                   color={sirenColors.left}
                   emissive={sirenColors.left}
-                  emissiveIntensity={strobeState ? 2.38 : 0.30}
+                  emissiveIntensity={strobeState ? 1.55 : 0.22}
                   roughness={0.1}
                 />
               </mesh>
               {strobeState && (
-                <pointLight position={[-dims.width * 0.24, 0.2, 0]} intensity={0.55} distance={1.60} color={sirenColors.left} />
+                <pointLight position={[-dims.width * 0.24, 0.08, -0.04]} intensity={0.4} distance={1.35} color={sirenColors.left} />
               )}
 
               {/* Internal Right Red/Blue Multi-Module Pack */}
@@ -1846,22 +1774,22 @@ export default function RealisticGtaVehicle({
                   map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
                   color={sirenColors.right}
                   emissive={sirenColors.right}
-                  emissiveIntensity={!strobeState ? 2.38 : 0.30}
+                  emissiveIntensity={!strobeState ? 1.55 : 0.22}
                   roughness={0.1}
                 />
               </mesh>
               {!strobeState && (
-                <pointLight position={[dims.width * 0.24, 0.2, 0]} intensity={0.55} distance={1.60} color={sirenColors.right} />
+                <pointLight position={[dims.width * 0.24, 0.08, -0.04]} intensity={0.4} distance={1.35} color={sirenColors.right} />
               )}
 
-              {/* Dual Center High-Power White LED Takedowns */}
-              <mesh position={[-0.042, 0.012, -0.058]}>
+              {/* Dual Center White LED Takedowns — face car front (-Z) */}
+              <mesh position={[-0.042, 0.012, -0.062]}>
                 <boxGeometry args={[0.034, 0.018, 0.016]} />
-                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={1.4} />
+                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={0.9} />
               </mesh>
-              <mesh position={[0.042, 0.012, -0.058]}>
+              <mesh position={[0.042, 0.012, -0.062]}>
                 <boxGeometry args={[0.034, 0.018, 0.016]} />
-                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={1.4} />
+                <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={0.9} />
               </mesh>
 
               {/* Side Alley Lights */}

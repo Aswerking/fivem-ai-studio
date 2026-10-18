@@ -384,14 +384,14 @@ export function RealGta5ModsImporter({
           <UploadCloud className="w-6 h-6 text-amber-400" />
         )}
         <span className="text-xs font-bold text-neutral-200">
-          {report ? `تم فحص: ${report.fileName}` : 'اسحب ملف السيارة (.ZIP من gta5-mods أو .YFT / .YTD / .GLB / .OBJ)'}
+          {report ? `تم فحص: ${report.fileName}` : 'اسحب ملف السيارة (.ZIP / .RAR / .Z3D / .YFT / .GLB / .OBJ)'}
         </span>
         <span className="text-[9px] text-neutral-500 font-mono">
           يدعم فك ضغط حزم السيارات وفحص عظام وشيدرات RSC7 YFT وتكستشرات YTD مباشرة في المتصفح
         </span>
         <input
           type="file"
-          accept=".zip,.yft,.ytd,.glb,.gltf,.obj,.rar,.7z,.rpf,.oiv"
+          accept=".zip,.rar,.z3d,.yft,.ytd,.glb,.gltf,.obj,.7z,.rpf,.oiv"
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />

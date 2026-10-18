@@ -53,21 +53,21 @@ export default function FiveForgeSuite({ className = "" }) {
   // TOOL 3: ADD-ON CAR IMPORTER STATE & PRESETS
   // ==========================================
   const [importerTab, setImporterTab] = useState('url'); // 'url' | 'file'
-  const [importerUrl, setImporterUrl] = useState('https://www.gta5-mods.com/vehicles/2000-ferrari-550-barchetta-pininfarina-add-on-template');
+  const [importerUrl, setImporterUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(100);
   const [importStage, setImportStage] = useState(4);
   const [importerActiveTab, setImporterActiveTab] = useState('meta'); // 'meta' | 'handling' | 'lighting'
   const [importedCarMeta, setImportedCarMeta] = useState({
-    displayName: '2001 Ferrari 550 Barchetta Pininfarina',
-    spawnCode: '00barch',
-    category: 'Super',
-    audioHash: 'turismor',
-    topSpeed: 305,
-    accelMultiplier: 1.75,
-    brakeForce: 1.4,
+    displayName: 'Vapid Police Interceptor',
+    spawnCode: 'police3',
+    category: 'Emergency',
+    audioHash: 'police3',
+    topSpeed: 180,
+    accelMultiplier: 1.2,
+    brakeForce: 1.2,
     drivetrain: 'RWD',
-    mass: 1690
+    mass: 1800
   });
 
   // ==========================================
@@ -470,14 +470,14 @@ export default function FiveForgeSuite({ className = "" }) {
 
   // Tool Specific Interactive States
   // 1. Vehicle Editor V2, Badge Customizer & Siren/Wanan Studio
-  const [carPreset, setCarPreset] = useState('00barch');
+  const [carPreset, setCarPreset] = useState('police3');
   const [carColor, setCarColor] = useState('#c81414');
   const [debadged, setDebadged] = useState(false);
   const [filledFlush, setFilledFlush] = useState(false);
   const [badgeMode, setBadgeMode] = useState('original');
   const [customBadgeTexture, setCustomBadgeTexture] = useState(null);
   const [badgeScale, setBadgeScale] = useState(1.0);
-  const [sirenType, setSirenType] = useState('auto');
+  const [sirenType, setSirenType] = useState('lightbar_led');
   const [sirenColorMode, setSirenColorMode] = useState('red_blue');
   const [sirenOffsetX, setSirenOffsetX] = useState(0);
   const [sirenOffsetY, setSirenOffsetY] = useState(0);
@@ -904,9 +904,12 @@ export default function FiveForgeSuite({ className = "" }) {
     setExportNotice(null);
     setUploadedFileName(null);
     if (tool.id === 'car_importer') {
-      setModelNameInput('00barch');
-      setCarPreset('00barch');
-      setCarColor('#c81414');
+      setModelNameInput('police3');
+      setCarPreset('police3');
+      setCarColor('#0a0a0f');
+      setSirenType('lightbar_led');
+      setBadgeMode('original');
+      setDebadged(false);
     }
   };
 
@@ -2053,7 +2056,7 @@ export default function FiveForgeSuite({ className = "" }) {
                                   { id: 'valor_vshape', label: '⚡ ونان سقف V إيروديناميك', desc: 'Federal Signal Valor زوايا مثلثة حديثة' },
                                   { id: 'roof_single_beacon', label: '🚨 ونان مغناطيسي فردي', desc: 'Whelen L31 LED بقاعدة مغناطيسية للمواكب' },
                                   { id: 'beacon_classic', label: '🚔 ونان كلاسيك قبتين دوارة', desc: 'Federal Signal Aerodynic مع سماعة وسطية' },
-                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/OBJ/YFT)', desc: 'ارفع ملف LCPDFR من صفحة الـ Blender Viewport' }
+                                  { id: 'custom_obj', label: '📦 بروبة مرفوعة (ZIP/RAR/Z3D/OBJ/YFT)', desc: 'ارفع ملف LCPDFR أو ZModeler من صفحة الـ Blender Viewport' }
                                 ].map((sItem) => (
                                   <button
                                     key={sItem.id}

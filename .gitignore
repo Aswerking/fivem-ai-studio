@@ -19,3 +19,4 @@ coverage/
 tmp/
 temp/
 scratch/
+.tmp-whelen/

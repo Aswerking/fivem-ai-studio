@@ -211,6 +211,10 @@ export default function BlenderCarViewportPage({
     setSirenRotX?.(0);
     setSirenRotY?.(0);
     setSirenRotZ?.(0);
+    if (sirenType && sirenType !== 'none') {
+      setGizmoTarget('siren');
+      setGizmoMode('translate');
+    }
     setGizmoKey((k) => k + 1);
   }, [sirenType]);
 
@@ -236,7 +240,10 @@ export default function BlenderCarViewportPage({
       setSirenType(pack.sirenType);
       setGizmoTarget('siren');
     }
-    setLcpdfrStatus(`✅ تم تطبيق بروبة LCPDFR: ${pack.titleAr}`);
+    // Honest UX: catalog = studio preview style, NOT the gated LCPDFR mesh download
+    setLcpdfrStatus(
+      `معاينة استوديو لـ «${pack.titleAr}» — مو ملف الموقع. حمّل الـ ZIP من LCPDFR وارفعه تحت عشان يصير نفس القطعة بالضبط.`
+    );
   };
 
   const handleImportLcpdfrUrl = () => {
@@ -342,14 +349,14 @@ export default function BlenderCarViewportPage({
             }}
             className="bg-[#1e1e1e] border border-[#3d3d3d] rounded px-2 py-1 text-[11px] text-amber-300 font-bold cursor-pointer"
           >
-            <option value="00barch">🏎️ 2001 Ferrari 550 Barchetta Pininfarina (YFT+YTD الأصلي)</option>
-            <option value="g63">🚙 Mercedes-AMG G63 4x4 (SUV)</option>
-            <option value="revolter">🔥 BMW M4 Competition G82 (Sports)</option>
-            <option value="zentorno">⚡ Lamborghini Aventador V12 (Hypercar)</option>
-            <option value="turismor">🏁 Ferrari 458 Spider (Supercar)</option>
-            <option value="sultanrs">🏎️ Karin Sultan RS / E30 M3 (Tuner)</option>
-            <option value="police3">🚓 Vapid Police Interceptor (Cruiser)</option>
-            <option value="schafter3">🚘 Benefactor Schafter V12 (Sedan)</option>
+            <option value="police3">🚓 سيارة شرطة (Police Interceptor) — للتجربة</option>
+            <option value="g63">🚙 Mercedes-AMG G63 (SUV)</option>
+            <option value="revolter">🔥 BMW M4 Competition</option>
+            <option value="zentorno">⚡ Lamborghini Aventador</option>
+            <option value="turismor">🏁 Ferrari 458 Spider</option>
+            <option value="sultanrs">🏎️ Karin Sultan RS</option>
+            <option value="schafter3">🚘 Benefactor Schafter</option>
+            <option value="00barch">🏎️ Ferrari 550 (YFT من الرابط)</option>
           </select>
         </div>
 
@@ -867,22 +874,25 @@ export default function BlenderCarViewportPage({
                     </div>
 
                     {/* LCPDFR Lightbar Dev Resources Quick Drop/Upload */}
-                    <label className={`p-2 border border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition text-[10px] ${
+                    <label className={`p-3 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition text-[10px] ${
                       isLoadingLightbar
                         ? 'border-amber-400 bg-amber-500/10 text-amber-200'
-                        : 'border-[#555] hover:border-amber-400 bg-[#141414] hover:bg-[#1f1f1f] text-neutral-300'
+                        : 'border-amber-500/70 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 text-amber-100'
                     }`}>
-                      <span>📦</span>
-                      <span className="font-bold">
+                      <span className="text-base">📦</span>
+                      <span className="font-black text-[11px]">
                         {isLoadingLightbar
-                          ? 'جاري تركيب البروب...'
+                          ? 'جاري تركيب البروب الحقيقي...'
                           : customLightbarName
-                            ? `مركّب: ${customLightbarName}`
-                            : 'رفع ونان أو دعامة مخصصة من LCPDFR (.ZIP / .OBJ / .YDR / .YFT)'}
+                            ? `مركّب الحقيقي: ${customLightbarName}`
+                            : 'ارفع ملف LCPDFR الحقيقي هنا (.ZIP / .RAR / .Z3D / .OBJ / .YDR / .YFT)'}
+                      </span>
+                      <span className="text-[9px] text-neutral-400 font-normal">
+                        يدعم كافة الصيغ: ZIP و RAR و Z3D و YDR و OBJ و YFT — تركيب مجسم حقيقي ومباشر
                       </span>
                       <input
                         type="file"
-                        accept=".zip,.obj,.ydr,.yft"
+                        accept=".zip,.rar,.z3d,.obj,.ydr,.yft"
                         className="hidden"
                         disabled={isLoadingLightbar}
                         onChange={(e) => {
@@ -899,6 +909,33 @@ export default function BlenderCarViewportPage({
                       <p className="text-[9px] text-sky-300 px-0.5">🔊 حزمة صوت مفعّلة للتصدير: {sirenAudioPack}</p>
                     )}
 
+                    <p className="text-[9px] text-neutral-400 leading-relaxed bg-[#141414] border border-[#333] rounded-lg px-2 py-1.5">
+                      أزرار الكتالوج = <span className="text-amber-300">معاينة داخل الاستوديو</span> (مش ملف LCPDFR الأصلي).
+                      عشان القطعة تكون نفس الموقع: افتح الرابط → حمّل ZIP/RAR/Z3D/YDR → ارفعه تحت. لو الاتجاه غلط اضغط قلب Y.
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'lightbar_led', label: 'سقف', tip: 'ونان سقف' },
+                        { id: 'soundoff_ion', label: 'صدام', tip: 'فلاشات أمام' },
+                        { id: 'visor_unmarked', label: 'شماسية', tip: 'داخل الزجاج' }
+                      ].map((q) => (
+                        <button
+                          key={q.id}
+                          type="button"
+                          title={q.tip}
+                          onClick={() => setSirenType(q.id)}
+                          className={`py-2 rounded-lg text-[11px] font-black border cursor-pointer ${
+                            sirenType === q.id
+                              ? 'bg-amber-500 text-black border-amber-300'
+                              : 'bg-[#2b2b2b] text-neutral-200 border-[#3d3d3d] hover:bg-[#353535]'
+                          }`}
+                        >
+                          {q.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="space-y-1.5">
                       {[
                         { id: 'setina_pb400_led', label: '🛡️ دعامة صدم Setina PB-400 + 4 فلاشات LED (أبيض/أزرق/أحمر/برتقالي)', badge: 'LCPDFR' },
@@ -910,7 +947,7 @@ export default function BlenderCarViewportPage({
                         { id: 'viper_s2', label: '🚨 فلاشر طبلون فردي/مزدوج (Federal Signal Viper S2)', badge: 'طبلون' },
                         { id: 'roof_single_beacon', label: '🚨 ونان مغناطيسي فردي على السقف (Whelen L31)', badge: 'VIP' },
                         { id: 'beacon_classic', label: '🚔 ونان كشافات دائرية كلاسيك (Aerodynic)', badge: 'كلاسيك' },
-                        { id: 'custom_obj', label: '📦 بروبة مرفوعة من ملفك (Custom LCPDFR Prop)', badge: 'مخصص' },
+                        { id: 'custom_obj', label: '📦 بروب من ملفك ZIP/RAR/Z3D/YDR/OBJ', badge: 'مخصص' },
                         { id: 'none', label: '❌ بدون ونان (سيارة مدنية بالكامل)', badge: 'مدنية' }
                       ].map((sOpt) => (
                         <button
@@ -1187,10 +1224,13 @@ export default function BlenderCarViewportPage({
                     <span className="font-bold text-amber-300 text-[11px] block">
                       🛡️ اختيار أو إزالة شعار السيارة (3D Emblems):
                     </span>
+                    <p className="text-[9px] text-neutral-400 leading-relaxed">
+                      اضغط <span className="text-amber-300">إزالة الشعارات</span> عشان تختفي نجوم/حروف الوكالة من الشبك والشنطة. لو السيارة من رابط YFT، أعد الاستيراد مرة بعد التحديث.
+                    </p>
                     <div className="space-y-1.5">
                       {[
                         { id: 'original', label: '🛡️ شعار الوكالة الأصلي (Factory)' },
-                        { id: 'debadged', label: '✨ إزالة الشعارات + سمكرة (Debadge & Flush)' },
+                        { id: 'debadged', label: '✨ إزالة الشعارات + سمكرة كاملة' },
                         { id: 'gold_crown', label: '👑 شعار ملكي ذهبي عيار 24K' },
                         { id: 'carbon_sport', label: '🏁 شعار كاربون رياضي M-Power / AMG' },
                         { id: 'lspd_star', label: '⭐ نجمة الشرطة وأمن الطرق + الأبواب' },
