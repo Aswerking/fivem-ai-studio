@@ -1196,20 +1196,26 @@ export default function RealisticGtaVehicle({
         const matName = mat.name || '';
         const label = `${nodeName} ${matName}`;
 
-        // 1. Debadging / Badge Replacement (Hide Factory Emblems, Logos, Chrome Crests, and Wheel Caps across all models)
+        // 1. Debadging / Badge Replacement (Hide Factory Emblems, Logos, Chrome Crests, G63 Star/Crest/Spare, and Wheel Caps across all models)
         const namedBadge =
-          /Vehicle_Badge|Wheel_Center_Cap|badge|emblem|logo|pininfarina|barch_badge|ferrari_badge|ferrari_logo|BMW_E30_M3_EMBLEMS|Mt_Logos|Mesheslogo11Mtl|Benz_Logo|V8_BITURBO|mercedes|amg_badge|crest/i.test(
+          /Vehicle_Badge|Wheel_Center_Cap|badge|emblem|logo|pininfarina|barch_badge|ferrari_badge|ferrari_logo|BMW_E30_M3_EMBLEMS|Mt_Logos|Mesheslogo11Mtl|Benz_Logo|V8_BITURBO|mercedes|amg_badge|crest|polySurface.*Wheel1A|polySurface.*3DWhee/i.test(
             label
-          );
+          ) ||
+          (/SM_FrontKit.*Details_EXT1|SM_Hood.*Details_EXT1|SM_RearKit.*Details_EXT1|SM_Base.*Details_EXT1|ANC_Door.*Details_EXT1/i.test(nodeName));
+
+        const isG63SpareStar = /SM_RearKit.*Details_EXT1/i.test(nodeName);
+        const isG63GrilleStar = /SM_FrontKit.*Details_EXT1/i.test(nodeName);
+        const isG63HoodBadge = /SM_Hood.*Details_EXT1/i.test(nodeName);
+
         const skipPart =
           /tire|tyre|wheel|rim|glass|light|headlight|taillight|plate/i.test(label) &&
-          !/badge|logo|emblem|center_cap/i.test(label);
+          !/badge|logo|emblem|center_cap|Details_EXT1|polySurface.*Wheel1A/i.test(label);
         let emblemByPlace = false;
         if (bodyFit && !skipPart) {
           const part = bodyFit.parts.find((p) => p.child === child);
           if (part) {
             const { size, center } = part;
-            const thin = size.z < 0.18 || size.y < 0.14;
+            const thin = size.z < 0.22 || size.y < 0.18;
             const onNose =
               center.z < bodyMin.z + bodySize.z * 0.18 &&
               center.y > bodyMin.y + bodySize.y * 0.16 &&
@@ -1227,7 +1233,7 @@ export default function RealisticGtaVehicle({
             emblemByPlace = thin && (onNose || onTrunk);
           }
         }
-        const isBadge = namedBadge || emblemByPlace;
+        const isBadge = namedBadge || isG63SpareStar || isG63GrilleStar || isG63HoodBadge || emblemByPlace;
 
         if (isBadge) {
           child.userData.hiddenAsBadge = true;
@@ -1340,6 +1346,14 @@ export default function RealisticGtaVehicle({
     rearVisorPos: [0, dims.height * 0.89, dims.length * 0.18],
     bumperPos: [0, dims.height * 0.28, -dims.length * 0.49],
     grilleStrobePos: [0, dims.height * 0.28, -dims.length * 0.49],
+    headlights: {
+      left: [-dims.width * 0.35, dims.height * 0.37, -dims.length * 0.45],
+      right: [dims.width * 0.35, dims.height * 0.37, -dims.length * 0.45]
+    },
+    taillights: {
+      left: [-dims.width * 0.33, dims.height * 0.44, dims.length * 0.468],
+      right: [dims.width * 0.33, dims.height * 0.44, dims.length * 0.468]
+    },
     dashViper: { pos: [0, dims.height * 0.52, -dims.length * 0.12], rot: [0.35, 0, 0] },
     visor: { pos: [0, dims.height * 0.91, -dims.length * 0.06], rot: [0.4, 0, 0] },
     frontHood: { pos: [0, dims.height * 0.44, -dims.length * 0.46], rot: [0.78, Math.PI, 0] },
@@ -1554,7 +1568,7 @@ export default function RealisticGtaVehicle({
           {effectiveSirenType === 'hideaway_vertex' && (
             <group name="lcpdfr_whelen_vertex_hideaway">
               {/* Left Front Headlight Vertex Strobe Module */}
-              <group position={anchors.headlights.left}>
+              <group position={anchors?.headlights?.left || [-dims.width * 0.35, dims.height * 0.37, -dims.length * 0.45]}>
                 {/* Chrome Reflector Cup */}
                 <mesh position={[0, 0, 0.015]} rotation={[-Math.PI / 2, 0, 0]}>
                   <cylinderGeometry args={[0.024, 0.014, 0.018, 20]} />
@@ -1577,15 +1591,15 @@ export default function RealisticGtaVehicle({
                 {strobeState && (
                   <pointLight
                     position={[0, 0, -0.06]}
-                    intensity={0.45}
-                    distance={1.4}
+                    intensity={0.35}
+                    distance={1.2}
                     color={sirenColors.left}
                   />
                 )}
               </group>
 
               {/* Right Front Headlight Vertex Strobe Module */}
-              <group position={anchors.headlights.right}>
+              <group position={anchors?.headlights?.right || [dims.width * 0.35, dims.height * 0.37, -dims.length * 0.45]}>
                 <mesh position={[0, 0, 0.015]} rotation={[-Math.PI / 2, 0, 0]}>
                   <cylinderGeometry args={[0.024, 0.014, 0.018, 20]} />
                   <meshStandardMaterial color="#cbd5e1" metalness={0.95} roughness={0.1} />
@@ -1606,8 +1620,8 @@ export default function RealisticGtaVehicle({
                 {!strobeState && (
                   <pointLight
                     position={[0, 0, -0.06]}
-                    intensity={0.45}
-                    distance={1.4}
+                    intensity={0.35}
+                    distance={1.2}
                     color={sirenColors.right}
                   />
                 )}
@@ -1645,39 +1659,39 @@ export default function RealisticGtaVehicle({
                 </mesh>
               </group>
 
-              {/* Left Rear Taillight/Reverse Hideaway Strobe */}
-              <group position={anchors.taillights.left}>
+              {/* Left Rear Taillight/Reverse Hideaway Strobe (Soft glow, no blinding rear flood) */}
+              <group position={anchors?.taillights?.left || [-dims.width * 0.33, dims.height * 0.44, dims.length * 0.468]}>
                 <mesh position={[0, 0, 0]}>
                   <sphereGeometry args={[0.016, 14, 14]} />
                   <meshStandardMaterial
                     map={getProceduralFresnelOpticTexture(!strobeState, sirenColors.right)}
                     color={!strobeState ? sirenColors.right : '#ffffff'}
                     emissive={!strobeState ? sirenColors.right : '#000000'}
-                    emissiveIntensity={!strobeState ? 1.92 : 0.00}
+                    emissiveIntensity={!strobeState ? 1.6 : 0.00}
                     transparent
                     opacity={0.88}
                   />
                 </mesh>
                 {!strobeState && (
-                  <pointLight position={[0, 0, 0.06]} intensity={0.55} distance={1.60} color={sirenColors.right} />
+                  <pointLight position={[0, 0, 0.03]} intensity={0.18} distance={0.75} color={sirenColors.right} />
                 )}
               </group>
 
-              {/* Right Rear Taillight/Reverse Hideaway Strobe */}
-              <group position={anchors.taillights.right}>
+              {/* Right Rear Taillight/Reverse Hideaway Strobe (Soft glow, no blinding rear flood) */}
+              <group position={anchors?.taillights?.right || [dims.width * 0.33, dims.height * 0.44, dims.length * 0.468]}>
                 <mesh position={[0, 0, 0]}>
                   <sphereGeometry args={[0.016, 14, 14]} />
                   <meshStandardMaterial
                     map={getProceduralFresnelOpticTexture(strobeState, sirenColors.left)}
                     color={strobeState ? sirenColors.left : '#ffffff'}
                     emissive={strobeState ? sirenColors.left : '#000000'}
-                    emissiveIntensity={strobeState ? 1.92 : 0.00}
+                    emissiveIntensity={strobeState ? 1.6 : 0.00}
                     transparent
                     opacity={0.88}
                   />
                 </mesh>
                 {strobeState && (
-                  <pointLight position={[0, 0, 0.06]} intensity={0.55} distance={1.60} color={sirenColors.left} />
+                  <pointLight position={[0, 0, 0.03]} intensity={0.18} distance={0.75} color={sirenColors.left} />
                 )}
               </group>
             </group>
@@ -2133,7 +2147,7 @@ export default function RealisticGtaVehicle({
             <group
               name="lcpdfr_custom_uploaded_prop"
               position={sirenOuterPos(lightbarBase)}
-              rotation={sirenOuterRot(sirenFaceFix)}
+              rotation={sirenOuterRot([0, 0, 0])}
               scale={[sirenScale, sirenScale, sirenScale]}
             >
               <group ref={sirenGroupRef}>

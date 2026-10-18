@@ -350,6 +350,9 @@ export default function BlenderCarViewportPage({
             className="bg-[#1e1e1e] border border-[#3d3d3d] rounded px-2 py-1 text-[11px] text-amber-300 font-bold cursor-pointer"
           >
             <option value="police3">🚓 سيارة شرطة (Police Interceptor) — للتجربة</option>
+            <option value="kuruma2">🛡️ Karin Armored Kuruma / مصفحة</option>
+            <option value="dubsta3">🚙 Benefactor Dubsta G63 AMG</option>
+            <option value="gauntlet4">⚡ Bravado Gauntlet Hellfire</option>
             <option value="g63">🚙 Mercedes-AMG G63 (SUV)</option>
             <option value="revolter">🔥 BMW M4 Competition</option>
             <option value="zentorno">⚡ Lamborghini Aventador</option>
