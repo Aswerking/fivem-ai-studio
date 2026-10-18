@@ -3617,6 +3617,7 @@ export default function FiveForgeSuite({ className = "" }) {
         onClearCustomVehicle={() => {
           setCustomVehicleUrl(null);
           setCustomVehicleYtdUrl(null);
+          setCustomVehicleFormat('glb');
         }}
         onImportUrl={(url) => handleStartImportCar(url)}
         isImporting={isImporting}
