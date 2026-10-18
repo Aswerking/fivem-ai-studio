@@ -11,6 +11,20 @@ import {
   downloadBlob
 } from '../engine/realCarImporter.js';
 import { resolveVehiclePresetType } from './models/RealisticGtaVehicle.jsx';
+import { getVehicleThumbFallback, getVehicleThumbUrl } from '../engine/vehicleThumbnails.js';
+
+export function VehicleThumb({ spawn, color, className = '' }) {
+  const [src, setSrc] = useState(() => getVehicleThumbUrl(spawn, color));
+  return (
+    <img
+      src={src}
+      alt={spawn || 'vehicle'}
+      loading="lazy"
+      className={className}
+      onError={() => setSrc(getVehicleThumbFallback(spawn, color))}
+    />
+  );
+}
 
 const ARCHETYPE_BADGES = {
   hypercar: 'Aventador V12 3D',
@@ -157,34 +171,39 @@ export function VanillaCarCatalog({ selectedSpawn, onSelect, featuredCars = [] }
                 onSelect(car);
                 setEdit(null);
               }}
-              className={`p-2 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between gap-1 ${
+              className={`overflow-hidden rounded-xl border text-right transition cursor-pointer flex flex-col ${
                 isSelected
                   ? 'bg-amber-500/15 border-amber-500 ring-1 ring-amber-500/40'
                   : 'bg-neutral-900/85 border-neutral-800 hover:border-neutral-600'
               }`}
             >
-              <div className="flex items-center justify-between gap-1.5 w-full">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0 border border-white/30"
-                    style={{ backgroundColor: car.color }}
-                  />
-                  <span className="text-[11px] font-bold text-white truncate">{car.name}</span>
-                </div>
+              <div className="relative h-24 w-full bg-neutral-950 overflow-hidden">
+                <VehicleThumb
+                  spawn={car.spawn}
+                  color={car.color || '#334155'}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                 {isSelected && (
-                  <span className="text-[8px] bg-amber-500 text-black px-1.5 py-0.2 rounded font-black shrink-0">
+                  <span className="absolute top-1.5 left-1.5 text-[8px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-black">
                     نشطة 3D
                   </span>
                 )}
+                <span
+                  className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full border border-white/40"
+                  style={{ backgroundColor: car.color }}
+                />
               </div>
-
-              <div className="flex items-center justify-between text-[9px] font-mono w-full pt-0.5">
-                <span className="text-amber-400">
-                  {car.spawn} <span className="text-neutral-500">· {car.classAr || car.category}</span>
-                </span>
-                <span className="text-[8px] bg-black/50 text-neutral-300 px-1.5 py-0.2 rounded border border-neutral-800">
-                  {car.badge || archBadge}
-                </span>
+              <div className="p-2 space-y-1">
+                <div className="text-[11px] font-bold text-white truncate">{car.name}</div>
+                <div className="flex items-center justify-between text-[9px] font-mono w-full">
+                  <span className="text-amber-400 truncate">
+                    {car.spawn} <span className="text-neutral-500">· {car.classAr || car.category}</span>
+                  </span>
+                  <span className="text-[8px] bg-black/50 text-neutral-300 px-1.5 py-0.2 rounded border border-neutral-800 shrink-0">
+                    {car.badge || archBadge}
+                  </span>
+                </div>
               </div>
             </button>
           );
@@ -210,6 +229,17 @@ export function VanillaCarCatalog({ selectedSpawn, onSelect, featuredCars = [] }
       {/* Selected Vehicle Quick Actions & Handling Tuner */}
       {selected && (
         <div className="p-2.5 rounded-xl bg-neutral-900/95 border border-amber-500/30 space-y-2">
+          <div className="relative h-28 w-full rounded-lg overflow-hidden bg-neutral-950 border border-neutral-800">
+            <VehicleThumb
+              spawn={selected.spawn}
+              color={selected.color || '#334155'}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute bottom-2 right-2 text-[10px] font-bold text-white drop-shadow">
+              {selected.name}
+            </div>
+          </div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span
