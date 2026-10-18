@@ -402,12 +402,11 @@ export function parseYtdTextureDictionary(ytdUint8, neededNames = null) {
 }
 
 /**
- * Parses a GTA V RSC7 Fragment (.yft) + optional (.ytd) into a complete Three.js Group
- * with accurate materials, shaders, textures, and 4 positioned wheels.
+ * Internal parser for both GTA V RSC7 Fragments (.yft) and Drawables (.ydr).
  */
-export function parseYftToThreeScene(yftUint8, ytdUint8 = null) {
-  const res = decompressRsc7Buffer(yftUint8);
-  if (!res) throw new Error('Invalid or unsupported RSC7 YFT file');
+function parseRsc7SceneInternal(u8, ytdUint8 = null, isYdr = false) {
+  const res = decompressRsc7Buffer(u8);
+  if (!res) throw new Error(isYdr ? 'Invalid or unsupported RSC7 YDR file' : 'Invalid or unsupported RSC7 YFT file');
   const { buf, sysSize } = res;
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const dec = new TextDecoder('utf-8');
@@ -431,8 +430,8 @@ export function parseYftToThreeScene(yftUint8, ytdUint8 = null) {
     return dec.decode(buf.subarray(offset, end));
   };
 
-  const primaryDrawablePtr = readPtr(0x30);
-  if (!primaryDrawablePtr) throw new Error('No PrimaryDrawable found in YFT');
+  const primaryDrawablePtr = isYdr ? 0 : readPtr(0x30);
+  if (!isYdr && !primaryDrawablePtr) throw new Error('No PrimaryDrawable found in YFT');
 
   // 1. Parse ShaderGroup
   const sgPtr = readPtr(primaryDrawablePtr + 0x10);
@@ -896,14 +895,42 @@ export function parseYftToThreeScene(yftUint8, ytdUint8 = null) {
   };
 
   const rootGroup = new THREE.Group();
-  rootGroup.name = 'yft_vehicle_root';
+  rootGroup.name = isYdr ? 'ydr_prop_root' : 'yft_vehicle_root';
 
   // 4. Decode Primary Drawable High-Detail Body Model
   const modelsHighListPtr = readPtr(primaryDrawablePtr + 0x50);
   const modelsArrPtr = modelsHighListPtr ? readPtr(modelsHighListPtr) : null;
   const primaryModelPtr = modelsArrPtr ? readPtr(modelsArrPtr) : null;
-  const bodyMeshes = decodeDrawableModel(primaryModelPtr, false, false);
-  bodyMeshes.forEach((m) => rootGroup.add(m));
+  if (primaryModelPtr) {
+    const bodyMeshes = decodeDrawableModel(primaryModelPtr, false, false);
+    bodyMeshes.forEach((m) => rootGroup.add(m));
+  }
+
+  // If parsing a standalone .ydr prop (e.g. Setina pushbar, lightbar, antenna, siren):
+  if (isYdr) {
+    if (modelsArrPtr) {
+      for (let mIdx = 1; mIdx < 16; mIdx++) {
+        const extraModelPtr = readPtr(modelsArrPtr + mIdx * 8);
+        if (!extraModelPtr) break;
+        const extraMeshes = decodeDrawableModel(extraModelPtr, false, false);
+        extraMeshes.forEach((m) => rootGroup.add(m));
+      }
+    }
+    // If no primary model mesh was resolved, scan buffer for any valid GEOM blocks
+    if (rootGroup.children.length === 0) {
+      for (let off = 0; off < buf.length - 32; off += 16) {
+        if (view.getUint32(off, true) === 0x4d4f4547) {
+          const gCnt = view.getUint16(off + 0x10, true);
+          const sMap = readPtr(off + 0x20);
+          if (gCnt > 0 && gCnt <= 64 && sMap) {
+            const scanMeshes = decodeDrawableModel(off, false, false);
+            scanMeshes.forEach((m) => rootGroup.add(m));
+          }
+        }
+      }
+    }
+    return rootGroup;
+  }
 
   // 5. Find Child Wheel DrawableModels ('GEOM' blocks in the YFT buffer other than primaryModelPtr)
   const wheelModelPtrs = [];
@@ -942,4 +969,18 @@ export function parseYftToThreeScene(yftUint8, ytdUint8 = null) {
   }
 
   return rootGroup;
+}
+
+/**
+ * Parses a GTA V RSC7 Fragment (.yft) + optional (.ytd) into a complete Three.js Group.
+ */
+export function parseYftToThreeScene(yftUint8, ytdUint8 = null) {
+  return parseRsc7SceneInternal(yftUint8, ytdUint8, false);
+}
+
+/**
+ * Parses a GTA V RSC7 Drawable (.ydr) + optional (.ytd) into a complete Three.js Group.
+ */
+export function parseYdrToThreeScene(ydrUint8, ytdUint8 = null) {
+  return parseRsc7SceneInternal(ydrUint8, ytdUint8, true);
 }

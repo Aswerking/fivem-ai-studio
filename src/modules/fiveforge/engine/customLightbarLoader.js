@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import JSZip from 'jszip';
-import { parseYftToThreeScene } from '../../../utils/yftVehicleLoader.js';
+import { parseYftToThreeScene, parseYdrToThreeScene } from '../../../utils/yftVehicleLoader.js';
 
 const objLoader = new OBJLoader();
 
@@ -76,6 +76,13 @@ async function loadYftBytes(bytes) {
   return normalizeLightbarScene(scene);
 }
 
+async function loadYdrBytes(bytes) {
+  const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const scene = await parseYdrToThreeScene(u8);
+  if (!scene) throw new Error('تعذر قراءة ملف الـ YDR للقطعة / البروب');
+  return normalizeLightbarScene(scene);
+}
+
 async function loadFromZip(arrayBuffer) {
   const zip = await JSZip.loadAsync(arrayBuffer);
   const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
@@ -88,6 +95,18 @@ async function loadFromZip(arrayBuffer) {
       format: 'obj',
       sourceName: objName,
       files: names
+    };
+  }
+
+  const ydrName = names.find((n) => /\.ydr$/i.test(n));
+  if (ydrName) {
+    const buf = await zip.file(ydrName).async('uint8array');
+    return {
+      scene: await loadYdrBytes(buf),
+      format: 'ydr',
+      sourceName: ydrName,
+      files: names,
+      ydrBytes: buf
     };
   }
 
@@ -104,12 +123,7 @@ async function loadFromZip(arrayBuffer) {
     };
   }
 
-  const ydrName = names.find((n) => /\.ydr$/i.test(n));
-  if (ydrName) {
-    throw new Error('الملف يحتوي .ydr — حوّله لـ .yft/.obj عبر OpenIV أو ارفع الـ OBJ مباشرة');
-  }
-
-  throw new Error('لم يتم العثور على .OBJ أو .YFT داخل الـ ZIP. تأكد أن الحزمة من LCPDFR Lightbars.');
+  throw new Error('لم يتم العثور على .OBJ أو .YDR أو .YFT داخل الـ ZIP. تأكد أن الحزمة من LCPDFR Lightbars.');
 }
 
 /**
@@ -128,6 +142,13 @@ export async function loadCustomLightbarFile(file) {
     return { objectUrl, format: 'obj', sourceName: name, scene };
   }
 
+  if (lower.endsWith('.ydr')) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const scene = await loadYdrBytes(buf);
+    const objectUrl = URL.createObjectURL(file);
+    return { objectUrl, format: 'ydr', sourceName: name, scene, ydrBytes: buf };
+  }
+
   if (lower.endsWith('.yft')) {
     const buf = new Uint8Array(await file.arrayBuffer());
     const scene = await loadYftBytes(buf);
@@ -137,7 +158,7 @@ export async function loadCustomLightbarFile(file) {
 
   if (lower.endsWith('.zip') || lower.endsWith('.rar') || lower.endsWith('.7z')) {
     if (lower.endsWith('.rar') || lower.endsWith('.7z')) {
-      throw new Error('ادعم حالياً .ZIP / .OBJ / .YFT — فك ضغط RAR/7Z يدوياً ثم ارفع ZIP أو الملفات مباشرة');
+      throw new Error('ادعم حالياً .ZIP / .OBJ / .YDR / .YFT — فك ضغط RAR/7Z يدوياً ثم ارفع ZIP أو الملفات مباشرة');
     }
     const ab = await file.arrayBuffer();
     const loaded = await loadFromZip(ab);
@@ -147,11 +168,12 @@ export async function loadCustomLightbarFile(file) {
       sourceName: loaded.sourceName || name,
       scene: loaded.scene,
       yftBytes: loaded.yftBytes,
+      ydrBytes: loaded.ydrBytes,
       files: loaded.files
     };
   }
 
-  throw new Error('صيغة غير مدعومة. استخدم .ZIP أو .OBJ أو .YFT من LCPDFR');
+  throw new Error('صيغة غير مدعومة. استخدم .ZIP أو .OBJ أو .YDR أو .YFT من LCPDFR');
 }
 
 /**
@@ -159,6 +181,7 @@ export async function loadCustomLightbarFile(file) {
  */
 export function guessSirenTypeFromNames(names = []) {
   const blob = names.join(' ').toLowerCase();
+  if (/setina|push.?bar|bull.?bar|ram.?bar|pb.?400|pb400|pb.?9|pb9|bumper.?guard/i.test(blob)) return 'setina_pb400_led';
   if (/visor|stealth|inner.?edge|axix/i.test(blob)) return 'visor_unmarked';
   if (/ion|plate|sound.?off|grille/i.test(blob)) return 'soundoff_ion';
   if (/hide|vertex|headlight|corner/i.test(blob)) return 'hideaway_vertex';

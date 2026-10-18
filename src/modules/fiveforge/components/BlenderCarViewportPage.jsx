@@ -878,11 +878,11 @@ export default function BlenderCarViewportPage({
                           ? 'جاري تركيب البروب...'
                           : customLightbarName
                             ? `مركّب: ${customLightbarName}`
-                            : 'رفع ونان مخصص من LCPDFR (.ZIP / .OBJ / .YFT)'}
+                            : 'رفع ونان أو دعامة مخصصة من LCPDFR (.ZIP / .OBJ / .YDR / .YFT)'}
                       </span>
                       <input
                         type="file"
-                        accept=".zip,.obj,.yft"
+                        accept=".zip,.obj,.ydr,.yft"
                         className="hidden"
                         disabled={isLoadingLightbar}
                         onChange={(e) => {
@@ -901,6 +901,7 @@ export default function BlenderCarViewportPage({
 
                     <div className="space-y-1.5">
                       {[
+                        { id: 'setina_pb400_led', label: '🛡️ دعامة صدم Setina PB-400 + 4 فلاشات LED (أبيض/أزرق/أحمر/برتقالي)', badge: 'LCPDFR' },
                         { id: 'hideaway_vertex', label: '🚨 فلاشات شمعات وأنوار مخفية (Whelen Vertex Hide-A-Way)', badge: 'LCPDFR' },
                         { id: 'visor_unmarked', label: '🕵️ شريط تظليل داخلي كامل (Axixtech / Inner Edge)', badge: 'مباحث' },
                         { id: 'soundoff_ion', label: '🚨 SoundOff Ion + حامل لوحة أمامية', badge: 'شبك' },

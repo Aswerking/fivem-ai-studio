@@ -844,6 +844,36 @@ function getProceduralFresnelOpticTexture(isLit, colorHex = '#dc2626') {
   return tex;
 }
 
+let cachedSetinaLogoTex = null;
+function getProceduralSetinaLogoTexture() {
+  if (cachedSetinaLogoTex) return cachedSetinaLogoTex;
+  if (typeof document === 'undefined') return null;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, 256, 64);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(6, 6, 244, 52);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px "Arial Black", Impact, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SETINA', 128, 32);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    cachedSetinaLogoTex = tex;
+    return tex;
+  } catch {
+    return null;
+  }
+}
+
 function measureVehicleBody(scene) {
   if (!scene) return null;
   try {
@@ -951,9 +981,10 @@ export default function RealisticGtaVehicle({
   }, [sirenType, presetType]);
 
   const effectivePushbar = useMemo(() => {
+    if (effectiveSirenType === 'setina_pb400_led') return true;
     if (typeof pushbarEnabled === 'boolean') return pushbarEnabled;
     return presetType === 'police';
-  }, [pushbarEnabled, presetType]);
+  }, [pushbarEnabled, presetType, effectiveSirenType]);
 
   const effectiveBadgeMode = useMemo(() => {
     if (badgeMode && badgeMode !== 'original') return badgeMode;
@@ -999,14 +1030,14 @@ export default function RealisticGtaVehicle({
     return () => clearTimeout(timer);
   }, []);
 
-  // Emergency Police / Wanan Strobe Animation (active whenever any siren is enabled)
+  // Emergency Police / Wanan Strobe Animation (active whenever any siren or pushbar is enabled)
   useEffect(() => {
-    if (effectiveSirenType === 'none') return;
+    if (effectiveSirenType === 'none' && !effectivePushbar) return;
     const interval = setInterval(() => {
       setStrobeState((prev) => !prev);
     }, 165);
     return () => clearInterval(interval);
-  }, [effectiveSirenType]);
+  }, [effectiveSirenType, effectivePushbar]);
 
   // Load custom LCPDFR lightbar prop (OBJ/YFT URL or in-memory ZIP cache)
   useEffect(() => {
@@ -2120,29 +2151,171 @@ export default function RealisticGtaVehicle({
         </group>
       )}
 
-      {/* 4. HEAVY-DUTY FRONT POLICE PUSHBAR / RAM BAR (دعامة صدم أمامية) */}
-      {effectivePushbar && (
-        <group name="police_push_bullbar" position={[0, dims.height * 0.33, frontZ - 0.035]}>
-          {/* Center Horizontal Bars */}
-          <mesh position={[0, 0.04, 0]} castShadow>
-            <boxGeometry args={[dims.width * 0.62, 0.035, 0.045]} />
-            <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.22} />
-          </mesh>
-          <mesh position={[0, -0.04, 0]} castShadow>
-            <boxGeometry args={[dims.width * 0.62, 0.035, 0.045]} />
-            <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.22} />
-          </mesh>
-          {/* Left & Right Vertical Uprights */}
-          <mesh position={[-dims.width * 0.24, 0, 0]} castShadow>
-            <boxGeometry args={[0.045, 0.24, 0.06]} />
-            <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.22} />
-          </mesh>
-          <mesh position={[dims.width * 0.24, 0, 0]} castShadow>
-            <boxGeometry args={[0.045, 0.24, 0.06]} />
-            <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.22} />
-          </mesh>
-        </group>
-      )}
+      {/* 4. AUTHENTIC SETINA PB-400 POLICE PUSHBAR WITH 4 INTEGRATED LED WARNING PODS */}
+      {effectivePushbar && (() => {
+        const uprightSpacing = Math.min(dims.width * 0.22, 0.44);
+        const pbY = dims.height * 0.33;
+        const pbZ = frontZ - 0.04;
+        const setinaTex = getProceduralSetinaLogoTexture();
+
+        // 4 Multi-Color Warning Strobe Pods (White, Blue, Red, Amber/Yellow)
+        // Matches exact LCPDFR dev-resource specification
+        const podSpecs = [
+          {
+            id: 'pod_0_white',
+            x: -uprightSpacing * 0.62,
+            color: '#ffffff',
+            lit: strobeState
+          },
+          {
+            id: 'pod_1_blue',
+            x: -uprightSpacing * 0.21,
+            color: sirenColors.left || '#38bdf8',
+            lit: strobeState
+          },
+          {
+            id: 'pod_2_red',
+            x: uprightSpacing * 0.21,
+            color: sirenColors.right || '#ef4444',
+            lit: !strobeState
+          },
+          {
+            id: 'pod_3_amber',
+            x: uprightSpacing * 0.62,
+            color: '#f59e0b',
+            lit: !strobeState
+          }
+        ];
+
+        return (
+          <group name="setina_pb400_police_pushbar" position={[0, pbY, pbZ]}>
+            {/* --- A. Left & Right Heavy-Duty Steel Upright Blades --- */}
+            {[-uprightSpacing, uprightSpacing].map((ux, idx) => (
+              <group key={`upright_${idx}`} position={[ux, 0, 0]}>
+                {/* Steel Core Blade */}
+                <mesh position={[0, 0, 0]} castShadow>
+                  <boxGeometry args={[0.024, 0.36, 0.075]} />
+                  <meshStandardMaterial color="#0a0a0c" metalness={0.92} roughness={0.2} />
+                </mesh>
+                {/* Thick Front Rubber Push Cushion Strip (Extruded Rubber Bumper) */}
+                <mesh position={[0, 0, -0.042]} castShadow>
+                  <boxGeometry args={[0.038, 0.36, 0.022]} />
+                  <meshStandardMaterial color="#14171f" roughness={0.94} metalness={0.06} />
+                </mesh>
+                {/* Chassis Gusset Mounting Bracket reaching into car bumper */}
+                <mesh position={[0, -0.08, 0.07]} rotation={[0.05, 0, 0]} castShadow>
+                  <boxGeometry args={[0.02, 0.05, 0.12]} />
+                  <meshStandardMaterial color="#1e293b" metalness={0.85} roughness={0.3} />
+                </mesh>
+              </group>
+            ))}
+
+            {/* --- B. Top Cylindrical Crossbar Tube --- */}
+            <mesh position={[0, 0.125, -0.008]} rotation={[0, 0, Math.PI / 2]} castShadow>
+              <cylinderGeometry args={[0.016, 0.016, uprightSpacing * 2, 24]} />
+              <meshStandardMaterial color="#09090b" metalness={0.92} roughness={0.22} />
+            </mesh>
+
+            {/* --- C. SETINA Brand Nameplate (Embossed Center Medallion) --- */}
+            <group position={[0, 0.125, -0.024]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.096, 0.026, 0.006]} />
+                <meshStandardMaterial color="#090d16" metalness={0.88} roughness={0.25} />
+              </mesh>
+              {setinaTex && (
+                <mesh position={[0, 0, -0.0035]} rotation={[0, Math.PI, 0]}>
+                  <planeGeometry args={[0.092, 0.024]} />
+                  <meshBasicMaterial map={setinaTex} transparent side={THREE.DoubleSide} />
+                </mesh>
+              )}
+            </group>
+
+            {/* --- D. Center Equipment Crossbar (Houses the 4 LED Warning Pods) --- */}
+            <mesh position={[0, 0.01, -0.012]} castShadow>
+              <boxGeometry args={[uprightSpacing * 2, 0.046, 0.036]} />
+              <meshStandardMaterial color="#09090b" metalness={0.92} roughness={0.22} />
+            </mesh>
+
+            {/* --- E. Lower Radiator Crossmember Tube --- */}
+            <mesh position={[0, -0.11, -0.008]} rotation={[0, 0, Math.PI / 2]} castShadow>
+              <cylinderGeometry args={[0.014, 0.014, uprightSpacing * 2, 24]} />
+              <meshStandardMaterial color="#09090b" metalness={0.92} roughness={0.22} />
+            </mesh>
+
+            {/* --- F. 4 Integrated Warning LED Modules (White, Blue, Red, Amber) --- */}
+            {podSpecs.map((pod) => (
+              <group key={pod.id} position={[pod.x, 0.01, -0.032]}>
+                {/* Black Die-Cast Aluminum Bezel Housing */}
+                <mesh castShadow>
+                  <boxGeometry args={[0.062, 0.028, 0.02]} />
+                  <meshStandardMaterial color="#05070f" metalness={0.95} roughness={0.2} />
+                </mesh>
+                {/* Fresnel Optical Warning Flasher Lens facing front (-Z) */}
+                <mesh position={[0, 0, -0.011]} rotation={[0, Math.PI, 0]}>
+                  <planeGeometry args={[0.054, 0.022]} />
+                  <meshStandardMaterial
+                    map={getProceduralFresnelOpticTexture(pod.lit, pod.color)}
+                    color={pod.color}
+                    emissive={pod.color}
+                    emissiveIntensity={pod.lit ? 2.6 : 0.25}
+                    roughness={0.12}
+                    metalness={0.1}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+                {/* Forward-Facing Road Illumination Strobe Light */}
+                {pod.lit && (
+                  <pointLight
+                    position={[0, 0, -0.10]}
+                    intensity={0.65}
+                    distance={2.4}
+                    color={pod.color}
+                  />
+                )}
+              </group>
+            ))}
+
+            {/* --- G. Headlight Wrap-Around Protector Wings (PB-9 Style Wraps) --- */}
+            {/* Left Wing Wrap */}
+            <group position={[-uprightSpacing, 0, 0]}>
+              {/* Upper tube wrapping headlight horizontally */}
+              <mesh position={[-dims.width * 0.11, 0.085, 0.03]} rotation={[0, -0.28, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, dims.width * 0.23, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+              {/* Lower tube wrapping headlight horizontally */}
+              <mesh position={[-dims.width * 0.11, -0.065, 0.03]} rotation={[0, -0.28, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, dims.width * 0.23, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+              {/* Outer vertical connector */}
+              <mesh position={[-dims.width * 0.22, 0.01, 0.06]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, 0.16, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+            </group>
+
+            {/* Right Wing Wrap (Perfect Geometric Mirror of Left Wrap) */}
+            <group position={[uprightSpacing, 0, 0]} scale={[-1, 1, 1]}>
+              {/* Upper tube wrapping headlight horizontally */}
+              <mesh position={[-dims.width * 0.11, 0.085, 0.03]} rotation={[0, -0.28, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, dims.width * 0.23, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+              {/* Lower tube wrapping headlight horizontally */}
+              <mesh position={[-dims.width * 0.11, -0.065, 0.03]} rotation={[0, -0.28, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, dims.width * 0.23, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+              {/* Outer vertical connector */}
+              <mesh position={[-dims.width * 0.22, 0.01, 0.06]} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, 0.16, 16]} />
+                <meshStandardMaterial color="#09090b" metalness={0.9} roughness={0.25} />
+              </mesh>
+            </group>
+          </group>
+        );
+      })()}
 
       {/* 5. Xenon Headlight Illumination */}
       {headlightsOn && (

@@ -1502,6 +1502,7 @@ export default function FiveForgeSuite({ className = "" }) {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
                               {[
                                 { id: 'none', label: '❌ بدون ونان' },
+                                { id: 'setina_pb400_led', label: '🛡️ دعامة Setina + 4 فلاشات' },
                                 { id: 'lightbar_led', label: '🚓 ونان سقف شرطة LED' },
                                 { id: 'visor_unmarked', label: '🕵️ ونان سري داخلي + شبك' },
                                 { id: 'soundoff_ion', label: '🚨 SoundOff Ion + لوحة' },
@@ -1804,6 +1805,7 @@ export default function FiveForgeSuite({ className = "" }) {
                               >
                                 <option value="auto">🚨 الونان: تلقائي حسب الفئة</option>
                                 <option value="none">❌ بدون ونان (مدنية)</option>
+                                <option value="setina_pb400_led">🛡️ دعامة صدم Setina PB-400 + 4 فلاشات LED (LCPDFR)</option>
                                 <option value="hideaway_vertex">⚡ فلاشات مخفية بالشمعات Whelen Vertex (LCPDFR)</option>
                                 <option value="visor_unmarked">🕵️ سفتي زجاج داخلي Axixtech / Inner Edge (مباحث)</option>
                                 <option value="soundoff_ion">🚨 SoundOff Ion + حامل لوحة أمامية (LCPDFR)</option>
@@ -2042,6 +2044,7 @@ export default function FiveForgeSuite({ className = "" }) {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                 {[
                                   { id: 'none', label: '❌ بدون ونان (مدنية)', desc: 'إزالة كافة الفلاشات والمعدات' },
+                                  { id: 'setina_pb400_led', label: '🛡️ دعامة Setina PB-400 + 4 فلاشات LED (LCPDFR)', desc: 'دعامة صدم Setina أصلية مع 4 فلاشات ملونة وشعار SETINA' },
                                   { id: 'hideaway_vertex', label: '⚡ فلاشات مخفية بالشمعات (LCPDFR)', desc: 'Whelen Vertex / Hide-A-Way داخل الشمعات والاسطبات' },
                                   { id: 'visor_unmarked', label: '🕵️ سفتي شماسية زجاج (مباحث)', desc: 'Axixtech Stealth Visor / Inner Edge خلف الزجاج' },
                                   { id: 'soundoff_ion', label: '🚨 SoundOff Ion + لوحة', desc: 'فلاشات Ion مع حامل لوحة أرقام أمامية (LCPDFR)' },

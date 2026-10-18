@@ -48,6 +48,20 @@ export const LCPDFR_LIGHTBAR_CATALOG = [
     match: [/48277/, /sound[-_]?off[-_]?ion/i, /license[-_]?plate[-_]?mount/i]
   },
   {
+    id: 'setina_pb400_led',
+    titleAr: 'Setina PB-400 Pushbar + 4 فلاشات LED',
+    titleEn: 'Setina PB-400 Pushbar with 4x LED Strobes',
+    author: 'Setina Mfg / LCPDFR Dev Resource',
+    kind: 'pushbar',
+    sirenType: 'setina_pb400_led',
+    mount: 'pushbar',
+    extrasHint: ['extra_1', 'extra_2', 'extra_3', 'extra_4'],
+    badge: 'دعامة',
+    descAr: 'دعامة صدم Setina PB-400 كاملة مع 4 فلاشات LED (أبيض وأزرق وأحمر وبرتقالي) وشعار SETINA الأصلي.',
+    url: 'https://www.lcpdfr.com/downloads/dev-resources/lightbars/setina-pb400/',
+    match: [/setina/i, /push[-_]?bar/i, /bull[-_]?bar/i, /ram[-_]?bar/i, /pb[-_]?400/i, /pb400/i, /pb[-_]?9/i, /pb9/i, /bumper[-_]?bar/i]
+  },
+  {
     id: 'hideaway_vertex',
     titleAr: 'Hide-A-Way — فلاشات مخفية',
     titleEn: 'Hide-A-Way / Whelen Vertex Style',
